@@ -42,15 +42,18 @@ pub fn main_js() -> Result<(), JsValue> {
         let (success_tx, success_rx) = futures::channel::oneshot::channel::<bool>();
         let image = web_sys::HtmlImageElement::new().unwrap();
 
-        let onload = Closure::once(Box::new(move || success_tx.send(true).expect("Could not send load event to receiver") ) as Box<dyn FnOnce()>);
+        let onload = Closure::once(Box::new(move || {
+            success_tx
+                .send(true)
+                .expect("Could not send load event to receiver")
+        }) as Box<dyn FnOnce()>);
 
         image.set_onload(Some(onload.as_ref().unchecked_ref()));
         image.set_src("Idle (1).png");
 
         success_rx.await;
-        
+
         context.draw_image_with_html_image_element(&image, 0.0, 0.0);
-        
     });
 
     Ok(())
