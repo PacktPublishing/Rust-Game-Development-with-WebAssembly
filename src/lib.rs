@@ -38,6 +38,12 @@ pub fn main_js() -> Result<(), JsValue> {
         5,
     );
 
+    image.set_onload(Some(onload.as_ref().unchecked_ref()));
+    image.set_src("Idle (1).png");
+
+    context.draw_image_with_html_image_element(&image, 0.0, 0.0);
+
+
     wasm_bindgen_futures::spawn_local(async move {
         let (success_tx, success_rx) = futures::channel::oneshot::channel::<bool>();
         let image = web_sys::HtmlImageElement::new().unwrap();
