@@ -1,6 +1,5 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc, sync::Mutex};
 
-use rand::prelude::*;
 use serde::Deserialize;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -60,17 +59,29 @@ pub fn main_js() -> Result<(), JsValue> {
             .into_serde()
             .expect("Could not convert rhb.json into a Sheet structure");
 
-        let (success_tx, success_rx) = futures::channel::oneshot::channel::<()>();
+        let (complete_tx, complete_rx) =
+            futures::channel::oneshot::channel::<Result<(), JsValue>>();
+        let complete_tx = Rc::new(Mutex::new(Some(complete_tx)));
+        let error_tx = complete_tx.clone();
         let image = web_sys::HtmlImageElement::new().unwrap();
 
         let callback = Closure::once(Box::new(move || {
-            success_tx.send(());
+            if let Some(complete_tx) = complete_tx.lock().ok().and_then(|mut opt| opt.take()) {
+                complete_tx.send(Ok(()));
+            }
+        }));
+
+        let error_callback = Closure::once(Box::new(move |err| {
+            if let Some(error_tx) = error_tx.lock().ok().and_then(|mut opt| opt.take()) {
+                error_tx.send(Err(err));
+            }
         }));
 
         image.set_onload(Some(callback.as_ref().unchecked_ref()));
+        image.set_onload(Some(error_callback.as_ref().unchecked_ref()));
         image.set_src("rhb.png");
 
-        success_rx.await;
+        complete_rx.await;
 
         let mut frame = -1;
         let interval_callback = Closure::wrap(Box::new(move || {
