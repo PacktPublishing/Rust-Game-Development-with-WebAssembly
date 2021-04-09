@@ -1,9 +1,15 @@
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{Response, Window};
+use web_sys::{Document, Response, Window};
 
 pub fn window() -> Result<Window, JsValue> {
     web_sys::window().ok_or(JsValue::from("Error Creating Window"))
+}
+
+pub fn document() -> Result<Document, JsValue> {
+    window()?
+        .document()
+        .ok_or(JsValue::from("Error Creating Document"))
 }
 
 pub async fn fetch_with_str(resource: &str) -> Result<JsValue, JsValue> {
