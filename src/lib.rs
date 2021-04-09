@@ -5,6 +5,8 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::console;
 
+mod browser;
+
 #[derive(Deserialize)]
 struct Rect {
     x: u16,
@@ -52,9 +54,10 @@ pub fn main_js() -> Result<(), JsValue> {
         .unwrap();
 
     wasm_bindgen_futures::spawn_local(async move {
-        let json = fetch_json("rhb.json")
+        let json = browser::fetch_json("rhb.json")
             .await
             .expect("Could not fetch rhb.json");
+
         let sheet: Sheet = json
             .into_serde()
             .expect("Could not convert rhb.json into a Sheet structure");
@@ -111,14 +114,4 @@ pub fn main_js() -> Result<(), JsValue> {
     });
 
     Ok(())
-}
-
-fn callback() {}
-
-async fn fetch_json(json_path: &str) -> Result<JsValue, JsValue> {
-    let window = web_sys::window().unwrap();
-    let resp_value = wasm_bindgen_futures::JsFuture::from(window.fetch_with_str(json_path)).await?;
-    let resp: web_sys::Response = resp_value.dyn_into()?;
-
-    wasm_bindgen_futures::JsFuture::from(resp.json()?).await
 }
