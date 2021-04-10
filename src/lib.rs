@@ -38,12 +38,7 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 pub fn main_js() -> Result<(), JsValue> {
     console_error_panic_hook::set_once();
 
-    let document = browser::document().unwrap();
-    let canvas = document
-        .get_element_by_id("canvas")
-        .unwrap()
-        .dyn_into::<web_sys::HtmlCanvasElement>()
-        .unwrap();
+    let canvas = browser::canvas().unwrap();
 
     let context = canvas
         .get_context("2d")
