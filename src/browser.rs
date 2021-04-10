@@ -1,3 +1,4 @@
+use futures::Future;
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{CanvasRenderingContext2d, Document, HtmlCanvasElement, Response, Window};
@@ -26,6 +27,13 @@ pub fn context() -> Result<CanvasRenderingContext2d, JsValue> {
         .ok_or(JsValue::from("Could not find 2d context on canvas"))?
         .dyn_into::<web_sys::CanvasRenderingContext2d>()
         .map_err(|err| JsValue::from(err))
+}
+
+pub fn spawn_local<F>(future: F)
+where
+    F: Future<Output = ()> + 'static,
+{
+    wasm_bindgen_futures::spawn_local(future);
 }
 
 pub async fn fetch_with_str(resource: &str) -> Result<JsValue, JsValue> {

@@ -40,7 +40,7 @@ pub fn main_js() -> Result<(), JsValue> {
 
     let context = browser::context()?;
 
-    wasm_bindgen_futures::spawn_local(async move {
+    browser::spawn_local(async move {
         let json = browser::fetch_json("rhb.json")
             .await
             .expect("Could not fetch rhb.json");
