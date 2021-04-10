@@ -59,15 +59,14 @@ pub fn main_js() -> Result<(), JsValue> {
             .into_serde()
             .expect("Could not convert rhb.json into a Sheet structure");
 
-        let (complete_tx, complete_rx) =
-            futures::channel::oneshot::channel::<Result<(), JsValue>>();
-        let complete_tx = Rc::new(Mutex::new(Some(complete_tx)));
-        let error_tx = complete_tx.clone();
         let image = web_sys::HtmlImageElement::new().unwrap();
+        let (success_tx, success_rx) = futures::channel::oneshot::channel::<Result<(), JsValue>>();
+        let success_tx = Rc::new(Mutex::new(Some(success_tx)));
+        let error_tx = Rc::clone(&success_tx);
 
         let callback = Closure::once(Box::new(move || {
-            if let Some(complete_tx) = complete_tx.lock().ok().and_then(|mut opt| opt.take()) {
-                complete_tx.send(Ok(()));
+            if let Some(success_tx) = success_tx.lock().ok().and_then(|mut opt| opt.take()) {
+                success_tx.send(Ok(()));
             }
         }));
 
@@ -81,7 +80,7 @@ pub fn main_js() -> Result<(), JsValue> {
         image.set_onload(Some(error_callback.as_ref().unchecked_ref()));
         image.set_src("rhb.png");
 
-        complete_rx.await;
+        success_rx.await;
 
         let mut frame = -1;
         let interval_callback = Closure::wrap(Box::new(move || {
