@@ -37,8 +37,7 @@ where
 }
 
 pub async fn fetch_with_str(resource: &str) -> Result<JsValue, JsValue> {
-    let resource = window()?.fetch_with_str(resource);
-    JsFuture::from(resource).await
+    JsFuture::from(window()?.fetch_with_str(resource)).await
 }
 
 pub async fn fetch_json(json_path: &str) -> Result<JsValue, JsValue> {
