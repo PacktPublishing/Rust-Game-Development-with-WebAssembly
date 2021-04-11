@@ -4,29 +4,29 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::{CanvasRenderingContext2d, Document, HtmlCanvasElement, Response, Window};
 
 pub fn window() -> Result<Window, JsValue> {
-    web_sys::window().ok_or(JsValue::from("Error Creating Window"))
+    web_sys::window().ok_or(JsValue::from("No Window Found"))
 }
 
 pub fn document() -> Result<Document, JsValue> {
     window()?
         .document()
-        .ok_or(JsValue::from("Error Creating Document"))
+        .ok_or(JsValue::from("No Document Found"))
 }
 
 pub fn canvas() -> Result<HtmlCanvasElement, JsValue> {
     document()?
         .get_element_by_id("canvas")
-        .ok_or(JsValue::from("Could not find 'canvas' element"))?
+        .ok_or(JsValue::from("No Canvas Element found with ID 'canvas'"))?
         .dyn_into::<web_sys::HtmlCanvasElement>()
-        .map_err(|err| JsValue::from(err))
+        .map_err(|element| JsValue::from(element))
 }
 
 pub fn context() -> Result<CanvasRenderingContext2d, JsValue> {
     canvas()?
         .get_context("2d")?
-        .ok_or(JsValue::from("Could not find 2d context on canvas"))?
+        .ok_or(JsValue::from("No 2d context found"))?
         .dyn_into::<web_sys::CanvasRenderingContext2d>()
-        .map_err(|err| JsValue::from(err))
+        .map_err(|element| JsValue::from(element))
 }
 
 pub fn spawn_local<F>(future: F)
@@ -37,7 +37,8 @@ where
 }
 
 pub async fn fetch_with_str(resource: &str) -> Result<JsValue, JsValue> {
-    JsFuture::from(window()?.fetch_with_str(resource)).await
+    let resource = window()?.fetch_with_str(resource);
+    JsFuture::from(resource).await
 }
 
 pub async fn fetch_json(json_path: &str) -> Result<JsValue, JsValue> {
