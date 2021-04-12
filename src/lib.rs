@@ -5,6 +5,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::console;
 
+#[macro_use]
 mod browser;
 mod engine;
 
@@ -58,7 +59,7 @@ pub fn main_js() -> Result<(), JsValue> {
         let interval_callback = Closure::wrap(Box::new(move || {
             frame = (frame + 1) % 8;
             let frame_name = format!("Run ({}).png", frame + 1);
-            console::log_1(&JsValue::from_str(&frame_name));
+            log!("Run ({}).png", frame + 1);
             let sprite = sheet.frames.get(&frame_name).expect("Cell not found");
 
             context.clear_rect(0.0, 0.0, 600.0, 600.0);

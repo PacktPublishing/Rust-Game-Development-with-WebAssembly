@@ -5,6 +5,13 @@ use web_sys::{
     CanvasRenderingContext2d, Document, HtmlCanvasElement, HtmlImageElement, Response, Window,
 };
 
+// Straight taken from https://rustwasm.github.io/book/game-of-life/debugging.html
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
+
 pub fn window() -> Result<Window, JsValue> {
     web_sys::window().ok_or(JsValue::from("No Window Found"))
 }
