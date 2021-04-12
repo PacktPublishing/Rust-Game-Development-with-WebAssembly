@@ -1,4 +1,5 @@
 use futures::Future;
+use js_sys::Function;
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
@@ -58,6 +59,10 @@ pub async fn fetch_json(json_path: &str) -> Result<JsValue, JsValue> {
 
 pub fn new_image() -> Result<HtmlImageElement, JsValue> {
     HtmlImageElement::new()
+}
+
+pub fn request_animation_frame(callback: &Function) -> Result<i32, JsValue> {
+    window()?.request_animation_frame(callback)
 }
 
 pub fn create_one_time_closure<F>(f: F) -> Closure<dyn FnMut()>
