@@ -39,6 +39,7 @@ getrandom = { version = "0.2", features = ["js"] }
 futures = "0.3.12"
 wasm-bindgen-futures = "0.4.20"
 serde = {version = "1.0.59", features = ["derive"] }
+anyhow = "1.0.40"
 
 # The `web-sys` crate allows you to interact with the various browser APIs,
 # like the DOM.
