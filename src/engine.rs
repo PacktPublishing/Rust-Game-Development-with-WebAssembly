@@ -35,28 +35,28 @@ pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
     Ok(image)
 }
 
-trait Game {}
-
-struct GameLoop<T: Game> {
-    game: T,
+pub trait Game {
+    fn update(&mut self);
+    fn draw(&self);
 }
 
-impl<T: Game> GameLoop<T> {
-    pub fn new(game: T) -> Self {
-        GameLoop { game }
-    }
+pub fn start(mut game: impl Game + 'static) -> Result<()> {
+    let f: Rc<RefCell<Option<Closure<dyn FnMut(f64)>>>> = Rc::new(RefCell::new(None));
+    let g = f.clone();
 
-    pub fn start(&mut self) -> Result<()> {
-        let f: Rc<RefCell<Option<Closure<dyn FnMut(f64)>>>> = Rc::new(RefCell::new(None));
-        let g = f.clone();
+    *g.borrow_mut() = Some(Closure::wrap(Box::new(move |perf: f64| {
+        game.update();
+        game.draw();
+        browser::request_animation_frame(f.borrow().as_ref().unwrap().as_ref().unchecked_ref());
+    }) as Box<dyn FnMut(f64)>));
 
-        let mut i = 0;
-        *g.borrow_mut() = Some(Closure::wrap(Box::new(move |perf: f64| {
-            i += 1;
-            browser::request_animation_frame(f.borrow().as_ref().unwrap().as_ref().unchecked_ref());
-        }) as Box<dyn FnMut(f64)>));
-
-        browser::request_animation_frame(g.borrow().as_ref().unwrap().as_ref().unchecked_ref());
-        Ok(())
-    }
+    browser::request_animation_frame(
+        g.borrow()
+            .as_ref()
+            .ok_or(anyhow!("GameLoop: Loop is None"))?
+            .as_ref()
+            .unchecked_ref(),
+    )
+    .map_err(|value| anyhow!("JS error: {:#?}", value))?;
+    Ok(())
 }
