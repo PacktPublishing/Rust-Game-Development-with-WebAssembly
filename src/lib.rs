@@ -49,7 +49,7 @@ pub fn main_js() -> Result<(), JsValue> {
             .into_serde()
             .expect("Could not convert rhb.json into a Sheet structure");
 
-        let image = web_sys::HtmlImageElement::new().unwrap();
+        let image = browser::new_image().unwrap();
         let (success_tx, success_rx) = futures::channel::oneshot::channel::<Result<(), JsValue>>();
         let success_tx = Rc::new(Mutex::new(Some(success_tx)));
         let error_tx = Rc::clone(&success_tx);

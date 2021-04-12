@@ -1,7 +1,9 @@
 use futures::Future;
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{CanvasRenderingContext2d, Document, HtmlCanvasElement, Response, Window};
+use web_sys::{
+    CanvasRenderingContext2d, Document, HtmlCanvasElement, HtmlImageElement, Response, Window,
+};
 
 pub fn window() -> Result<Window, JsValue> {
     web_sys::window().ok_or(JsValue::from("No Window Found"))
@@ -45,6 +47,10 @@ pub async fn fetch_json(json_path: &str) -> Result<JsValue, JsValue> {
     let resp: Response = resp_value.dyn_into()?;
 
     JsFuture::from(resp.json()?).await
+}
+
+pub fn new_image() -> Result<HtmlImageElement, JsValue> {
+    HtmlImageElement::new()
 }
 
 pub fn create_one_time_closure<F>(f: F) -> Closure<dyn FnMut()>
