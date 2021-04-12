@@ -1,8 +1,8 @@
 use crate::browser;
 use anyhow::{anyhow, Result};
 use futures::channel::oneshot::channel;
-use std::{rc::Rc, sync::Mutex};
-use wasm_bindgen::{JsCast, JsValue};
+use std::{cell::RefCell, rc::Rc, sync::Mutex};
+use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::HtmlImageElement;
 
 pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
@@ -33,4 +33,30 @@ pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
         .map_err(|js_value| anyhow!("Error loading image {} err: {:#?}", source, js_value))?;
 
     Ok(image)
+}
+
+trait Game {}
+
+struct GameLoop<T: Game> {
+    game: T,
+}
+
+impl<T: Game> GameLoop<T> {
+    pub fn new(game: T) -> Self {
+        GameLoop { game }
+    }
+
+    pub fn start(&mut self) -> Result<()> {
+        let f: Rc<RefCell<Option<Closure<dyn FnMut(f64)>>>> = Rc::new(RefCell::new(None));
+        let g = f.clone();
+
+        let mut i = 0;
+        *g.borrow_mut() = Some(Closure::wrap(Box::new(move |perf: f64| {
+            i += 1;
+            browser::request_animation_frame(f.borrow().as_ref().unwrap().as_ref().unchecked_ref());
+        }) as Box<dyn FnMut(f64)>));
+
+        browser::request_animation_frame(g.borrow().as_ref().unwrap().as_ref().unchecked_ref());
+        Ok(())
+    }
 }
