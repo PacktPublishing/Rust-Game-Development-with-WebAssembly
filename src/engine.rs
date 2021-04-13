@@ -40,23 +40,35 @@ pub trait Game {
     fn draw(&self);
 }
 
-pub fn start(mut game: impl Game + 'static) -> Result<()> {
-    let f: Rc<RefCell<Option<Closure<dyn FnMut(f64)>>>> = Rc::new(RefCell::new(None));
-    let g = f.clone();
+struct GameLoop {
+    last_update: f64,
+}
 
-    *g.borrow_mut() = Some(Closure::wrap(Box::new(move |perf: f64| {
-        game.update();
-        game.draw();
-        browser::request_animation_frame(f.borrow().as_ref().unwrap().as_ref().unchecked_ref());
-    }) as Box<dyn FnMut(f64)>));
+impl GameLoop {
+    pub fn start(mut game: impl Game + 'static) -> Result<()> {
+        let f: Rc<RefCell<Option<Closure<dyn FnMut(f64)>>>> = Rc::new(RefCell::new(None));
+        let g = f.clone();
+        let mut game_loop = GameLoop { last_update: now() };
 
-    browser::request_animation_frame(
-        g.borrow()
-            .as_ref()
-            .ok_or(anyhow!("GameLoop: Loop is None"))?
-            .as_ref()
-            .unchecked_ref(),
-    )
-    .map_err(|value| anyhow!("JS error: {:#?}", value))?;
-    Ok(())
+        *g.borrow_mut() = Some(Closure::wrap(Box::new(move |perf: f64| {
+            let mut difference = perf - game_loop.last_update;
+            while difference > 0 {
+                game.update();
+                difference -= FRAME_SIZE;
+            }
+            game_loop.last_update = perf;
+            game.draw();
+            browser::request_animation_frame(f.borrow().as_ref().unwrap().as_ref().unchecked_ref());
+        }) as Box<dyn FnMut(f64)>));
+
+        browser::request_animation_frame(
+            g.borrow()
+                .as_ref()
+                .ok_or(anyhow!("GameLoop: Loop is None"))?
+                .as_ref()
+                .unchecked_ref(),
+        )
+        .map_err(|value| anyhow!("JS error: {:#?}", value))?;
+        Ok(())
+    }
 }
