@@ -1,14 +1,12 @@
-use std::collections::HashMap;
-
-use engine::{Game, GameLoop};
-use serde::Deserialize;
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
-use web_sys::{CanvasRenderingContext2d, HtmlElement, HtmlImageElement};
-
 #[macro_use]
 mod browser;
 mod engine;
+
+use engine::{Game, GameLoop};
+use serde::Deserialize;
+use std::collections::HashMap;
+use wasm_bindgen::prelude::*;
+use web_sys::{CanvasRenderingContext2d, HtmlImageElement};
 
 #[derive(Deserialize)]
 struct Rect {
@@ -39,16 +37,35 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 struct WalkTheDog {
     image: HtmlImageElement,
     sheet: Sheet,
-    frame: u8,
+    frame_count: u8,
+    current_frame: u8,
+}
+
+impl WalkTheDog {
+    fn new(image: HtmlImageElement, sheet: Sheet) -> Self {
+        WalkTheDog {
+            image,
+            sheet,
+            current_frame: 0,
+            frame_count: 0,
+        }
+    }
 }
 
 impl Game for WalkTheDog {
     fn update(&mut self) {
-        self.frame = (self.frame + 1) % 8;
+        if self.frame_count < 24 {
+            self.frame_count += 1;
+        } else {
+            self.frame_count = 0;
+        }
+        if (self.frame_count % 3) == 0 {
+            self.current_frame = (self.current_frame + 1) % 8;
+        }
     }
 
     fn draw(&self, context: CanvasRenderingContext2d) {
-        let frame_name = format!("Run ({}).png", self.frame + 1);
+        let frame_name = format!("Run ({}).png", self.current_frame + 1);
         let sprite = self.sheet.frames.get(&frame_name).expect("Cell not found");
 
         context.clear_rect(0.0, 0.0, 600.0, 600.0);
@@ -86,11 +103,7 @@ pub fn main_js() -> Result<(), JsValue> {
             .await
             .expect("Could not load rhb.png");
 
-        let game = WalkTheDog {
-            image,
-            sheet,
-            frame: 0,
-        };
+        let game = WalkTheDog::new(image, sheet);
 
         GameLoop::start(game).expect("Could not start game loop");
     });

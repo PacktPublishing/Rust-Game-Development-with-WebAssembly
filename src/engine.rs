@@ -35,7 +35,7 @@ pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
     Ok(image)
 }
 
-const FRAME_SIZE: f64 = 0.01666666;
+const FRAME_SIZE: f64 = 16.666667;
 
 pub trait Game {
     fn update(&mut self);
