@@ -64,17 +64,17 @@ pub fn main_js() -> Result<(), JsValue> {
         let success_tx = Rc::new(Mutex::new(Some(success_tx)));
         let error_tx = Rc::clone(&success_tx);
 
-        let callback = Closure::once(Box::new(move || {
+        let callback = Closure::once(move || {
             if let Some(success_tx) = success_tx.lock().ok().and_then(|mut opt| opt.take()) {
                 success_tx.send(Ok(()));
             }
-        }));
+        });
 
-        let error_callback = Closure::once(Box::new(move |err| {
+        let error_callback = Closure::once(move |err| {
             if let Some(error_tx) = error_tx.lock().ok().and_then(|mut opt| opt.take()) {
                 error_tx.send(Err(err));
             }
-        }));
+        });
 
         image.set_onload(Some(callback.as_ref().unchecked_ref()));
         image.set_onload(Some(error_callback.as_ref().unchecked_ref()));
