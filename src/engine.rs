@@ -1,9 +1,9 @@
 use crate::browser;
 use anyhow::{anyhow, Result};
 use futures::channel::oneshot::channel;
-use std::{rc::Rc, sync::Mutex};
+use std::{cell::RefCell, rc::Rc, sync::Mutex};
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
-use web_sys::HtmlImageElement;
+use web_sys::{CanvasRenderingContext2d, HtmlImageElement};
 
 pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
     let image = browser::new_image()
@@ -34,13 +34,15 @@ pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
 
     Ok(image)
 }
-/*
+
+const FRAME_SIZE: f64 = 0.01666666;
+
 pub trait Game {
     fn update(&mut self);
-    fn draw(&self);
+    fn draw(&self, context: CanvasRenderingContext2d);
 }
 
-struct GameLoop {
+pub struct GameLoop {
     last_update: f64,
 }
 
@@ -48,16 +50,19 @@ impl GameLoop {
     pub fn start(mut game: impl Game + 'static) -> Result<()> {
         let f: Rc<RefCell<Option<Closure<dyn FnMut(f64)>>>> = Rc::new(RefCell::new(None));
         let g = f.clone();
-        let mut game_loop = GameLoop { last_update: now() };
+        let mut game_loop = GameLoop {
+            last_update: browser::now()
+                .map_err(|err| anyhow!("browser::now failed! {:#?}", err))?,
+        };
 
         *g.borrow_mut() = Some(Closure::wrap(Box::new(move |perf: f64| {
             let mut difference = perf - game_loop.last_update;
-            while difference > 0 {
+            while difference > 0.0 {
                 game.update();
                 difference -= FRAME_SIZE;
             }
             game_loop.last_update = perf;
-            game.draw();
+            game.draw(browser::context().expect("No context found"));
             browser::request_animation_frame(f.borrow().as_ref().unwrap().as_ref().unchecked_ref());
         }) as Box<dyn FnMut(f64)>));
 
@@ -72,4 +77,3 @@ impl GameLoop {
         Ok(())
     }
 }
-*/

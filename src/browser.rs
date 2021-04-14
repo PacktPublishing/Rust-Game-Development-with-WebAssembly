@@ -71,3 +71,10 @@ where
 {
     Closure::once(fn_once)
 }
+
+pub fn now() -> Result<f64, JsValue> {
+    Ok(window()?
+        .performance()
+        .ok_or(JsValue::from("Performance object not found"))?
+        .now())
+}
