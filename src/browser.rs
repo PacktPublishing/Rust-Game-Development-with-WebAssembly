@@ -1,6 +1,8 @@
 use futures::Future;
 use js_sys::Function;
-use wasm_bindgen::{closure::WasmClosureFnOnce, prelude::Closure, JsCast, JsValue};
+use wasm_bindgen::{
+    closure::WasmClosure, closure::WasmClosureFnOnce, prelude::Closure, JsCast, JsValue,
+};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
     CanvasRenderingContext2d, Document, HtmlCanvasElement, HtmlImageElement, Response, Window,
@@ -70,6 +72,10 @@ where
     F: 'static + WasmClosureFnOnce<A, R>,
 {
     Closure::once(fn_once)
+}
+
+pub fn closure_wrap<T: WasmClosure + ?Sized>(data: Box<T>) -> Closure<T> {
+    Closure::wrap(data)
 }
 
 pub fn now() -> Result<f64, JsValue> {
