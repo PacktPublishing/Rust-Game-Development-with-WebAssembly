@@ -35,7 +35,10 @@ pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
     Ok(image)
 }
 
-const FRAME_SIZE: f64 = 16.666667;
+// Sixty Frames per second, converted to a frame length in milliseconds
+const FRAME_SIZE: f64 = 1.0 / 60.0 * 1000.0;
+type LoopClosure = Closure<dyn FnMut(f64)>;
+type SharedLoopClosure = Rc<RefCell<Option<LoopClosure>>>;
 
 pub trait Game {
     fn update(&mut self);
@@ -48,14 +51,14 @@ pub struct GameLoop {
 
 impl GameLoop {
     pub fn start(mut game: impl Game + 'static) -> Result<()> {
-        let f: Rc<RefCell<Option<Closure<dyn FnMut(f64)>>>> = Rc::new(RefCell::new(None));
+        let f: SharedLoopClosure = Rc::new(RefCell::new(None));
         let g = f.clone();
         let mut game_loop = GameLoop {
             last_update: browser::now()
                 .map_err(|err| anyhow!("browser::now failed! {:#?}", err))?,
         };
 
-        *g.borrow_mut() = Some(Closure::wrap(Box::new(move |perf: f64| {
+        *g.borrow_mut() = Some(loop_fn(move |perf: f64| {
             let mut difference = perf - game_loop.last_update;
             while difference > 0.0 {
                 game.update();
@@ -64,7 +67,7 @@ impl GameLoop {
             game_loop.last_update = perf;
             game.draw(browser::context().expect("No context found"));
             browser::request_animation_frame(f.borrow().as_ref().unwrap().as_ref().unchecked_ref());
-        }) as Box<dyn FnMut(f64)>));
+        }));
 
         browser::request_animation_frame(
             g.borrow()
@@ -76,4 +79,8 @@ impl GameLoop {
         .map_err(|value| anyhow!("JS error: {:#?}", value))?;
         Ok(())
     }
+}
+
+fn loop_fn(f: impl FnMut(f64) + 'static) -> LoopClosure {
+    browser::closure_wrap(Box::new(f))
 }
