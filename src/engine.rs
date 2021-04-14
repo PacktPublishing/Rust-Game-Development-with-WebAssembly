@@ -5,6 +5,43 @@ use std::{cell::RefCell, rc::Rc, sync::Mutex};
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::{CanvasRenderingContext2d, HtmlImageElement};
 
+struct Rect {
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+}
+
+pub struct Renderer {
+    context: CanvasRenderingContext2d,
+}
+
+impl Renderer {
+    fn clear(&self, rect: &Rect) {
+        self.context.clear_rect(
+            rect.x.into(),
+            rect.y.into(),
+            rect.width.into(),
+            rect.height.into(),
+        );
+    }
+
+    fn draw_image(&self, image: &HtmlImageElement, frame: &Rect, destination: &Rect) {
+        self.context
+            .draw_image_with_html_image_element_and_sw_and_sh_and_dx_and_dy_and_dw_and_dh(
+                &image,
+                frame.x.into(),
+                frame.y.into(),
+                frame.width.into(),
+                frame.height.into(),
+                destination.x.into(),
+                destination.y.into(),
+                destination.width.into(),
+                destination.height.into(),
+            );
+    }
+}
+
 pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
     let image = browser::new_image()
         .map_err(|js_value| anyhow!("Could not create image {:#?}", js_value))?;
@@ -42,7 +79,7 @@ type SharedLoopClosure = Rc<RefCell<Option<LoopClosure>>>;
 
 pub trait Game {
     fn update(&mut self);
-    fn draw(&self, context: CanvasRenderingContext2d);
+    fn draw(&self, context: &Renderer);
 }
 
 pub struct GameLoop {

@@ -2,7 +2,7 @@
 mod browser;
 mod engine;
 
-use engine::{Game, GameLoop};
+use engine::{Game, GameLoop, Renderer};
 use serde::Deserialize;
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
@@ -64,7 +64,7 @@ impl Game for WalkTheDog {
         }
     }
 
-    fn draw(&self, context: CanvasRenderingContext2d) {
+    fn draw(&self, context: &Renderer) {
         let frame_name = format!("Run ({}).png", self.current_frame + 1);
         let sprite = self.sheet.frames.get(&frame_name).expect("Cell not found");
 
