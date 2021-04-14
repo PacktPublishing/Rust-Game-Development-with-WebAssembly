@@ -1,6 +1,6 @@
 use futures::Future;
 use js_sys::Function;
-use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
+use wasm_bindgen::{closure::WasmClosureFnOnce, prelude::Closure, JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{
     CanvasRenderingContext2d, Document, HtmlCanvasElement, HtmlImageElement, Response, Window,
@@ -65,16 +65,9 @@ pub fn request_animation_frame(callback: &Function) -> Result<i32, JsValue> {
     window()?.request_animation_frame(callback)
 }
 
-pub fn create_one_time_closure<F>(f: F) -> Closure<dyn FnMut()>
+pub fn closure_once<F, A, R>(fn_once: F) -> Closure<F::FnMut>
 where
-    F: Fn() + 'static,
+    F: 'static + WasmClosureFnOnce<A, R>,
 {
-    Closure::once(Box::new(f))
-}
-
-pub fn create_one_time_closure_with_err<F>(f: F) -> Closure<dyn FnMut(JsValue)>
-where
-    F: Fn(JsValue) + 'static,
-{
-    Closure::once(Box::new(f))
+    Closure::once(fn_once)
 }

@@ -34,7 +34,7 @@ pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
 
     Ok(image)
 }
-
+/*
 pub trait Game {
     fn update(&mut self);
     fn draw(&self);
