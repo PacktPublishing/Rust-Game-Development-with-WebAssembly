@@ -65,9 +65,7 @@ pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
     image.set_onerror(Some(error_callback.as_ref().unchecked_ref()));
     image.set_src(source);
 
-    success_rx
-        .await?
-        .map_err(|js_value| anyhow!("Error loading image {} err: {:#?}", source, js_value))?;
+    success_rx.await?;
 
     Ok(image)
 }
