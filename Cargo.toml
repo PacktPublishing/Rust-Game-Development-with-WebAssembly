@@ -41,6 +41,7 @@ wasm-bindgen-futures = "0.4.20"
 serde = {version = "1.0.59", features = ["derive"] }
 anyhow = "1.0.40"
 js-sys = "0.3.50"
+async-trait = "0.1.49"
 
 # The `web-sys` crate allows you to interact with the various browser APIs,
 # like the DOM.

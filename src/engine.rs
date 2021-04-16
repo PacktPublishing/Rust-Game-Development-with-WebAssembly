@@ -1,5 +1,6 @@
 use crate::browser;
 use anyhow::{anyhow, Result};
+use async_trait::async_trait;
 use futures::channel::oneshot::channel;
 use std::{cell::RefCell, rc::Rc, sync::Mutex};
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
@@ -75,7 +76,9 @@ const FRAME_SIZE: f64 = 1.0 / 60.0 * 1000.0;
 type LoopClosure = Closure<dyn FnMut(f64)>;
 type SharedLoopClosure = Rc<RefCell<Option<LoopClosure>>>;
 
+#[async_trait(?Send)]
 pub trait Game {
+    async fn initialize(&mut self) -> Result<()>;
     fn update(&mut self);
     fn draw(&self, context: &Renderer);
 }
@@ -85,9 +88,12 @@ pub struct GameLoop {
 }
 
 impl GameLoop {
-    pub fn start(mut game: impl Game + 'static) -> Result<()> {
+    pub async fn start(mut game: impl Game + 'static) -> Result<()> {
+        game.initialize().await?;
+
         let f: SharedLoopClosure = Rc::new(RefCell::new(None));
         let g = f.clone();
+
         let mut game_loop = GameLoop {
             last_update: browser::now()
                 .map_err(|err| anyhow!("browser::now failed! {:#?}", err))?,
@@ -96,6 +102,7 @@ impl GameLoop {
         let renderer = Renderer {
             context: browser::context().expect("No context found"),
         };
+
         *g.borrow_mut() = Some(loop_fn(move |perf: f64| {
             let mut difference = perf - game_loop.last_update;
             while difference > 0.0 {
@@ -104,6 +111,7 @@ impl GameLoop {
             }
             game_loop.last_update = perf;
             game.draw(&renderer);
+
             browser::request_animation_frame(f.borrow().as_ref().unwrap().as_ref().unchecked_ref());
         }));
 
