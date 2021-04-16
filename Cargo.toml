@@ -55,7 +55,8 @@ features = ["console",
            "Element",
            "HtmlImageElement",
            "Response",
-           "Performance"]
+           "Performance",
+           "KeyboardEvent"]
 
 # These crates are used for running unit tests.
 [dev-dependencies]
