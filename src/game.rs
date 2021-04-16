@@ -6,7 +6,7 @@ use web_sys::HtmlImageElement;
 
 use crate::{
     browser,
-    engine::{self, Game, Rect, Renderer},
+    engine::{self, Game, Point, Rect, Renderer},
 };
 
 #[derive(Deserialize)]
@@ -31,6 +31,7 @@ pub struct WalkTheDog {
     image: Option<HtmlImageElement>,
     sheet: Option<Sheet>,
     frame: u8,
+    position: Point,
 }
 
 impl WalkTheDog {
@@ -39,6 +40,7 @@ impl WalkTheDog {
             image: None,
             sheet: None,
             frame: 0,
+            position: Point { x: 0, y: 0 },
         }
     }
 }
@@ -52,6 +54,7 @@ impl Game for WalkTheDog {
 
         self.sheet = json.into_serde()?;
         self.image = Some(engine::load_image("rhb.png").await?);
+
         Ok(())
     }
 
@@ -89,8 +92,8 @@ impl Game for WalkTheDog {
                     height: sprite.frame.h.into(),
                 },
                 &Rect {
-                    x: 300.0,
-                    y: 300.0,
+                    x: self.position.x.into(),
+                    y: self.position.y.into(),
                     width: sprite.frame.w.into(),
                     height: sprite.frame.h.into(),
                 },

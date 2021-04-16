@@ -6,6 +6,11 @@ use std::{cell::RefCell, rc::Rc, sync::Mutex};
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::{CanvasRenderingContext2d, HtmlImageElement};
 
+pub struct Point {
+    pub x: i16,
+    pub y: i16,
+}
+
 pub struct Rect {
     pub x: f32,
     pub y: f32,
