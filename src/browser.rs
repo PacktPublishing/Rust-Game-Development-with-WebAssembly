@@ -16,19 +16,19 @@ macro_rules! log {
 }
 
 pub fn window() -> Result<Window, JsValue> {
-    web_sys::window().ok_or(JsValue::from("No Window Found"))
+    web_sys::window().ok_or_else(|| JsValue::from("No Window Found"))
 }
 
 pub fn document() -> Result<Document, JsValue> {
     window()?
         .document()
-        .ok_or(JsValue::from("No Document Found"))
+        .ok_or_else(|| JsValue::from("No Document Found"))
 }
 
 pub fn canvas() -> Result<HtmlCanvasElement, JsValue> {
     document()?
         .get_element_by_id("canvas")
-        .ok_or(JsValue::from("No Canvas Element found with ID 'canvas'"))?
+        .ok_or_else(|| JsValue::from("No Canvas Element found with ID 'canvas'"))?
         .dyn_into::<web_sys::HtmlCanvasElement>()
         .map_err(|element| JsValue::from(element))
 }
@@ -36,7 +36,7 @@ pub fn canvas() -> Result<HtmlCanvasElement, JsValue> {
 pub fn context() -> Result<CanvasRenderingContext2d, JsValue> {
     canvas()?
         .get_context("2d")?
-        .ok_or(JsValue::from("No 2d context found"))?
+        .ok_or_else(|| JsValue::from("No 2d context found"))?
         .dyn_into::<web_sys::CanvasRenderingContext2d>()
         .map_err(|element| JsValue::from(element))
 }
@@ -81,6 +81,6 @@ pub fn closure_wrap<T: WasmClosure + ?Sized>(data: Box<T>) -> Closure<T> {
 pub fn now() -> Result<f64, JsValue> {
     Ok(window()?
         .performance()
-        .ok_or(JsValue::from("Performance object not found"))?
+        .ok_or_else(|| JsValue::from("Performance object not found"))?
         .now())
 }
