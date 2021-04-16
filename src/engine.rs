@@ -5,11 +5,11 @@ use std::{cell::RefCell, rc::Rc, sync::Mutex};
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::{CanvasRenderingContext2d, HtmlImageElement};
 
-struct Rect {
-    x: f32,
-    y: f32,
-    width: f32,
-    height: f32,
+pub struct Rect {
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
 }
 
 pub struct Renderer {
@@ -17,7 +17,7 @@ pub struct Renderer {
 }
 
 impl Renderer {
-    fn clear(&self, rect: &Rect) {
+    pub fn clear(&self, rect: &Rect) {
         self.context.clear_rect(
             rect.x.into(),
             rect.y.into(),
@@ -26,7 +26,7 @@ impl Renderer {
         );
     }
 
-    fn draw_image(&self, image: &HtmlImageElement, frame: &Rect, destination: &Rect) {
+    pub fn draw_image(&self, image: &HtmlImageElement, frame: &Rect, destination: &Rect) {
         self.context
             .draw_image_with_html_image_element_and_sw_and_sh_and_dx_and_dy_and_dw_and_dh(
                 &image,
@@ -93,6 +93,9 @@ impl GameLoop {
                 .map_err(|err| anyhow!("browser::now failed! {:#?}", err))?,
         };
 
+        let renderer = Renderer {
+            context: browser::context().expect("No context found"),
+        };
         *g.borrow_mut() = Some(loop_fn(move |perf: f64| {
             let mut difference = perf - game_loop.last_update;
             while difference > 0.0 {
@@ -100,7 +103,7 @@ impl GameLoop {
                 difference -= FRAME_SIZE;
             }
             game_loop.last_update = perf;
-            game.draw(browser::context().expect("No context found"));
+            game.draw(&renderer);
             browser::request_animation_frame(f.borrow().as_ref().unwrap().as_ref().unchecked_ref());
         }));
 

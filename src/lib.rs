@@ -2,14 +2,14 @@
 mod browser;
 mod engine;
 
-use engine::{Game, GameLoop, Renderer};
+use engine::{Game, GameLoop, Rect, Renderer};
 use serde::Deserialize;
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
-use web_sys::{CanvasRenderingContext2d, HtmlImageElement};
+use web_sys::HtmlImageElement;
 
 #[derive(Deserialize)]
-struct Rect {
+struct SheetRect {
     x: u16,
     y: u16,
     w: u16,
@@ -18,7 +18,7 @@ struct Rect {
 
 #[derive(Deserialize)]
 struct Cell {
-    frame: Rect,
+    frame: SheetRect,
 }
 
 #[derive(Deserialize)]
@@ -64,21 +64,30 @@ impl Game for WalkTheDog {
         }
     }
 
-    fn draw(&self, context: &Renderer) {
+    fn draw(&self, renderer: &Renderer) {
         let frame_name = format!("Run ({}).png", self.current_frame + 1);
         let sprite = self.sheet.frames.get(&frame_name).expect("Cell not found");
 
-        context.clear_rect(0.0, 0.0, 600.0, 600.0);
-        context.draw_image_with_html_image_element_and_sw_and_sh_and_dx_and_dy_and_dw_and_dh(
+        renderer.clear(&Rect {
+            x: 0.0,
+            y: 0.0,
+            width: 600.0,
+            height: 600.0,
+        });
+        renderer.draw_image(
             &self.image,
-            sprite.frame.x.into(),
-            sprite.frame.y.into(),
-            sprite.frame.w.into(),
-            sprite.frame.h.into(),
-            300.0,
-            300.0,
-            sprite.frame.w.into(),
-            sprite.frame.h.into(),
+            &Rect {
+                x: sprite.frame.x.into(),
+                y: sprite.frame.y.into(),
+                width: sprite.frame.w.into(),
+                height: sprite.frame.h.into(),
+            },
+            &Rect {
+                x: 300.0,
+                y: 300.0,
+                width: sprite.frame.w.into(),
+                height: sprite.frame.h.into(),
+            },
         );
     }
 }
