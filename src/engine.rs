@@ -3,7 +3,7 @@ use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use futures::channel::oneshot::channel;
 use std::{cell::RefCell, rc::Rc, sync::Mutex};
-use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
+use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{CanvasRenderingContext2d, HtmlImageElement};
 
 pub struct Point {
