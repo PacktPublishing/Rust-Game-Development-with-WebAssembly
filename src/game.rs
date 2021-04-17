@@ -1,10 +1,8 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use futures::channel::mpsc::{unbounded, UnboundedReceiver};
 use serde::Deserialize;
 use std::collections::HashMap;
-use wasm_bindgen::{prelude::Closure, JsCast};
-use web_sys::{HtmlImageElement, KeyboardEvent};
+use web_sys::HtmlImageElement;
 
 use crate::{
     browser,
@@ -35,7 +33,6 @@ pub struct WalkTheDog {
     frame: u8,
     position: Point,
     velocity: Point,
-    events: Option<UnboundedReceiver<KeyboardEvent>>,
 }
 
 impl WalkTheDog {
@@ -46,7 +43,6 @@ impl WalkTheDog {
             frame: 0,
             position: Point { x: 0, y: 0 },
             velocity: Point { x: 0, y: 0 },
-            events: None,
         }
     }
 }

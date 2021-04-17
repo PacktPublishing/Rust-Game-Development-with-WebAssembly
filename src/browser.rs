@@ -1,6 +1,5 @@
 use anyhow::{anyhow, Result};
 use futures::Future;
-use js_sys::Function;
 use wasm_bindgen::{
     closure::WasmClosure, closure::WasmClosureFnOnce, prelude::Closure, JsCast, JsValue,
 };

@@ -47,7 +47,8 @@ impl Renderer {
                 destination.y.into(),
                 destination.width.into(),
                 destination.height.into(),
-            );
+            )
+            .expect("Drawing is throwing exceptions! Unrecoverable error.");
     }
 }
 
@@ -73,7 +74,7 @@ pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
     image.set_onerror(Some(error_callback.as_ref().unchecked_ref()));
     image.set_src(source);
 
-    complete_rx.await?;
+    complete_rx.await??;
 
     Ok(image)
 }
