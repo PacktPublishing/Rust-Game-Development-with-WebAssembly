@@ -51,9 +51,7 @@ impl WalkTheDog {
 #[async_trait(?Send)]
 impl Game for WalkTheDog {
     async fn initialize(&mut self) -> Result<()> {
-        let json = browser::fetch_json("rhb.json")
-            .await
-            .map_err(|err| anyhow!("Could not load rhb.json {:#?}", err))?;
+        let json = browser::fetch_json("rhb.json").await?;
 
         self.sheet = json.into_serde()?;
         self.image = Some(engine::load_image("rhb.png").await?);
@@ -63,9 +61,7 @@ impl Game for WalkTheDog {
                 log!("keycode {:?}", keycode);
             }) as Box<dyn FnMut(KeyboardEvent)>);
 
-        browser::window()
-            .map_err(|err| anyhow!("Cannot get window {:#?}", err))?
-            .set_onkeydown(Some(onkeydown.as_ref().unchecked_ref()));
+        browser::window()?.set_onkeydown(Some(onkeydown.as_ref().unchecked_ref()));
         onkeydown.forget();
 
         Ok(())

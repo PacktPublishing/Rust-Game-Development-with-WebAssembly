@@ -1,4 +1,4 @@
-use crate::browser;
+use crate::browser::{self, LoopClosure};
 use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 use futures::channel::oneshot::channel;
@@ -49,8 +49,7 @@ impl Renderer {
 }
 
 pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
-    let image = browser::new_image()
-        .map_err(|js_value| anyhow!("Could not create image {:#?}", js_value))?;
+    let image = browser::new_image()?;
 
     let (success_tx, success_rx) = channel::<Result<(), JsValue>>();
     let success_tx = Rc::new(Mutex::new(Some(success_tx)));
@@ -78,7 +77,6 @@ pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
 
 // Sixty Frames per second, converted to a frame length in milliseconds
 const FRAME_SIZE: f64 = 1.0 / 60.0 * 1000.0;
-type LoopClosure = Closure<dyn FnMut(f64)>;
 type SharedLoopClosure = Rc<RefCell<Option<LoopClosure>>>;
 
 #[async_trait(?Send)]
@@ -100,15 +98,14 @@ impl GameLoop {
         let g = f.clone();
 
         let mut game_loop = GameLoop {
-            last_update: browser::now()
-                .map_err(|err| anyhow!("browser::now failed! {:#?}", err))?,
+            last_update: browser::now()?,
         };
 
         let renderer = Renderer {
             context: browser::context().expect("No context found"),
         };
 
-        *g.borrow_mut() = Some(loop_fn(move |perf: f64| {
+        *g.borrow_mut() = Some(browser::loop_fn(move |perf: f64| {
             let mut difference = perf - game_loop.last_update;
             while difference > 0.0 {
                 game.update();
@@ -117,21 +114,14 @@ impl GameLoop {
             game_loop.last_update = perf;
             game.draw(&renderer);
 
-            browser::request_animation_frame(f.borrow().as_ref().unwrap().as_ref().unchecked_ref());
+            browser::request_animation_frame(f.borrow().as_ref().unwrap());
         }));
 
         browser::request_animation_frame(
             g.borrow()
                 .as_ref()
-                .ok_or(anyhow!("GameLoop: Loop is None"))?
-                .as_ref()
-                .unchecked_ref(),
-        )
-        .map_err(|value| anyhow!("JS error: {:#?}", value))?;
+                .ok_or(anyhow!("GameLoop: Loop is None"))?,
+        )?;
         Ok(())
     }
-}
-
-fn loop_fn(f: impl FnMut(f64) + 'static) -> LoopClosure {
-    browser::closure_wrap(Box::new(f))
 }

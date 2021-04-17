@@ -79,9 +79,14 @@ pub fn new_image() -> Result<HtmlImageElement> {
     HtmlImageElement::new().map_err(|err| anyhow!("Could not create HtmlImageElement: {:#?}", err))
 }
 
-pub fn request_animation_frame(callback: &Function) -> Result<i32> {
+pub type LoopClosure = Closure<dyn FnMut(f64)>;
+pub fn loop_fn(f: impl FnMut(f64) + 'static) -> LoopClosure {
+    closure_wrap(Box::new(f))
+}
+
+pub fn request_animation_frame(callback: &LoopClosure) -> Result<i32> {
     window()?
-        .request_animation_frame(callback)
+        .request_animation_frame(callback.as_ref().unchecked_ref())
         .map_err(|err| anyhow!("Cannot request animation frame {:#?}", err))
 }
 
