@@ -56,19 +56,8 @@ impl Game for WalkTheDog {
     async fn initialize(&mut self) -> Result<()> {
         let json = browser::fetch_json("rhb.json").await?;
 
-        let (mut sender, receiver) = unbounded();
-        self.events = Some(receiver);
         self.sheet = json.into_serde()?;
         self.image = Some(engine::load_image("rhb.png").await?);
-
-        let onkeydown: Closure<dyn FnMut(KeyboardEvent)> =
-            browser::closure_wrap(Box::new(move |keycode: KeyboardEvent| {
-                log!("keycode {:?}", keycode);
-                sender.start_send(keycode);
-            }) as Box<dyn FnMut(KeyboardEvent)>);
-
-        browser::window()?.set_onkeydown(Some(onkeydown.as_ref().unchecked_ref()));
-        onkeydown.forget();
 
         Ok(())
     }
