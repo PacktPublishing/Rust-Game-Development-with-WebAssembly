@@ -1,6 +1,6 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use async_trait::async_trait;
-use futures::channel::mpsc::{channel, unbounded, Receiver, UnboundedReceiver};
+use futures::channel::mpsc::{unbounded, UnboundedReceiver};
 use serde::Deserialize;
 use std::collections::HashMap;
 use wasm_bindgen::{prelude::Closure, JsCast};
