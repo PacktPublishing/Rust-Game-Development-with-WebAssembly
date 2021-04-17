@@ -82,22 +82,6 @@ pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
 const FRAME_SIZE: f64 = 1.0 / 60.0 * 1000.0;
 type SharedLoopClosure = Rc<RefCell<Option<LoopClosure>>>;
 
-pub struct KeyState {
-    pressed_keys: HashMap<String, web_sys::KeyboardEvent>,
-}
-
-impl KeyState {
-    fn new() -> Self {
-        return KeyState {
-            pressed_keys: HashMap::new(),
-        };
-    }
-
-    pub fn is_pressed(&self, code: &str) -> bool {
-        self.pressed_keys.contains_key(code)
-    }
-}
-
 #[async_trait(?Send)]
 pub trait Game {
     async fn initialize(&mut self) -> Result<()>;
@@ -149,6 +133,27 @@ impl GameLoop {
     }
 }
 
+pub struct KeyState {
+    pressed_keys: HashMap<String, web_sys::KeyboardEvent>,
+}
+
+impl KeyState {
+    fn new() -> Self {
+        return KeyState {
+            pressed_keys: HashMap::new(),
+        };
+    }
+
+    pub fn is_pressed(&self, code: &str) -> bool {
+        self.pressed_keys.contains_key(code)
+    }
+}
+
+enum KeyPress {
+    KeyUp(web_sys::KeyboardEvent),
+    KeyDown(web_sys::KeyboardEvent),
+}
+
 fn process_input(state: &mut KeyState, keyevent_receiver: &mut UnboundedReceiver<KeyPress>) {
     loop {
         match keyevent_receiver.try_next() {
@@ -163,11 +168,6 @@ fn process_input(state: &mut KeyState, keyevent_receiver: &mut UnboundedReceiver
             }
         };
     }
-}
-
-enum KeyPress {
-    KeyUp(web_sys::KeyboardEvent),
-    KeyDown(web_sys::KeyboardEvent),
 }
 
 fn prepare_input() -> Result<UnboundedReceiver<KeyPress>> {
