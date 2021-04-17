@@ -8,7 +8,7 @@ use web_sys::{HtmlImageElement, KeyboardEvent};
 
 use crate::{
     browser,
-    engine::{self, Game, Point, Rect, Renderer},
+    engine::{self, Game, KeyState, Point, Rect, Renderer},
 };
 
 #[derive(Deserialize)]
@@ -62,21 +62,16 @@ impl Game for WalkTheDog {
         Ok(())
     }
 
-    fn update(&mut self) {
-        if let Some(events) = self.events.as_mut() {
-            loop {
-                match events.try_next() {
-                    Ok(None) => break,
-                    Ok(Some(evt)) => {
-                        log!("Found {:#?}", evt);
-                    }
-                    Err(err) => {
-                        log!("Nothing found, not closed {:#?}", err);
-                        break;
-                    }
-                }
-            }
+    fn update(&mut self, keystate: &KeyState) {
+        let mut velocity = Point { x: 0, y: 0 };
+
+        if keystate.is_pressed("ArrowRight") {
+            velocity.x += 1;
         }
+        if keystate.is_pressed("ArrowLeft") {
+            velocity.x -= 1;
+        }
+        self.position.x = self.position.x + velocity.x;
 
         if self.frame < 23 {
             self.frame += 1;
