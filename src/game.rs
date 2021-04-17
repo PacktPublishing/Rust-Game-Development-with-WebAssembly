@@ -27,6 +27,8 @@ pub struct Sheet {
     frames: HashMap<String, Cell>,
 }
 
+const GRAVITY: i16 = 1;
+
 pub struct WalkTheDog {
     image: Option<HtmlImageElement>,
     sheet: Option<Sheet>,
@@ -41,7 +43,7 @@ impl WalkTheDog {
             image: None,
             sheet: None,
             frame: 0,
-            position: Point { x: 0, y: 0 },
+            position: Point { x: 0, y: 478 },
             velocity: Point { x: 0, y: 0 },
         }
     }
@@ -59,15 +61,16 @@ impl Game for WalkTheDog {
     }
 
     fn update(&mut self, keystate: &KeyState) {
-        let mut velocity = Point { x: 0, y: 0 };
+        if keystate.is_pressed("Space") && self.velocity.y == 0 {
+            self.velocity.y = -25;
+        } else if self.position.y < 478 {
+            self.velocity.y += GRAVITY;
+        } else if self.position.y >= 478 {
+            self.velocity.y = 0;
+            self.position.y = 478;
+        }
 
-        if keystate.is_pressed("ArrowRight") {
-            velocity.x += 1;
-        }
-        if keystate.is_pressed("ArrowLeft") {
-            velocity.x -= 1;
-        }
-        self.position.x = self.position.x + velocity.x;
+        self.position.y = self.position.y + self.velocity.y;
 
         if self.frame < 23 {
             self.frame += 1;
