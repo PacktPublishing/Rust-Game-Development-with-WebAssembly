@@ -1,3 +1,4 @@
+use anyhow::{anyhow, Result};
 use futures::Future;
 use js_sys::Function;
 use wasm_bindgen::{
@@ -15,30 +16,36 @@ macro_rules! log {
     }
 }
 
-pub fn window() -> Result<Window, JsValue> {
-    web_sys::window().ok_or_else(|| JsValue::from("No Window Found"))
+pub fn window() -> Result<Window> {
+    web_sys::window().ok_or_else(|| anyhow!("No Window Found"))
 }
 
-pub fn document() -> Result<Document, JsValue> {
+pub fn document() -> Result<Document> {
     window()?
         .document()
-        .ok_or_else(|| JsValue::from("No Document Found"))
+        .ok_or_else(|| anyhow!("No Document Found"))
 }
 
-pub fn canvas() -> Result<HtmlCanvasElement, JsValue> {
+pub fn canvas() -> Result<HtmlCanvasElement> {
     document()?
         .get_element_by_id("canvas")
-        .ok_or_else(|| JsValue::from("No Canvas Element found with ID 'canvas'"))?
+        .ok_or_else(|| anyhow!("No Canvas Element found with ID 'canvas'"))?
         .dyn_into::<web_sys::HtmlCanvasElement>()
-        .map_err(|element| JsValue::from(element))
+        .map_err(|element| anyhow!("Error converting {:#?} to HtmlCanvasElement", element))
 }
 
-pub fn context() -> Result<CanvasRenderingContext2d, JsValue> {
+pub fn context() -> Result<CanvasRenderingContext2d> {
     canvas()?
-        .get_context("2d")?
-        .ok_or_else(|| JsValue::from("No 2d context found"))?
+        .get_context("2d")
+        .map_err(|js_value| anyhow!("Error getting 2d context {:#?}", js_value))?
+        .ok_or_else(|| anyhow!("No 2d context found"))?
         .dyn_into::<web_sys::CanvasRenderingContext2d>()
-        .map_err(|element| JsValue::from(element))
+        .map_err(|element| {
+            anyhow!(
+                "Error converting {:#?} to CanvasRenderingContext2d",
+                element
+            )
+        })
 }
 
 pub fn spawn_local<F>(future: F)
@@ -48,23 +55,34 @@ where
     wasm_bindgen_futures::spawn_local(future);
 }
 
-pub async fn fetch_with_str(resource: &str) -> Result<JsValue, JsValue> {
-    JsFuture::from(window()?.fetch_with_str(resource)).await
+pub async fn fetch_with_str(resource: &str) -> Result<JsValue> {
+    JsFuture::from(window()?.fetch_with_str(resource))
+        .await
+        .map_err(|err| anyhow!("error fetching {:#?}", err))
 }
 
-pub async fn fetch_json(json_path: &str) -> Result<JsValue, JsValue> {
+pub async fn fetch_json(json_path: &str) -> Result<JsValue> {
     let resp_value = fetch_with_str(json_path).await?;
-    let resp: Response = resp_value.dyn_into()?;
+    let resp: Response = resp_value
+        .dyn_into()
+        .map_err(|element| anyhow!("Error converting {:#?} to Response", element))?;
 
-    JsFuture::from(resp.json()?).await
+    JsFuture::from(
+        resp.json()
+            .map_err(|err| anyhow!("Could not get JSON from response {:#?}", err))?,
+    )
+    .await
+    .map_err(|err| anyhow!("error fetching json {:#?}", err))
 }
 
-pub fn new_image() -> Result<HtmlImageElement, JsValue> {
-    HtmlImageElement::new()
+pub fn new_image() -> Result<HtmlImageElement> {
+    HtmlImageElement::new().map_err(|err| anyhow!("Could not create HtmlImageElement: {:#?}", err))
 }
 
-pub fn request_animation_frame(callback: &Function) -> Result<i32, JsValue> {
-    window()?.request_animation_frame(callback)
+pub fn request_animation_frame(callback: &Function) -> Result<i32> {
+    window()?
+        .request_animation_frame(callback)
+        .map_err(|err| anyhow!("Cannot request animation frame {:#?}", err))
 }
 
 pub fn closure_once<F, A, R>(fn_once: F) -> Closure<F::FnMut>
@@ -78,9 +96,9 @@ pub fn closure_wrap<T: WasmClosure + ?Sized>(data: Box<T>) -> Closure<T> {
     Closure::wrap(data)
 }
 
-pub fn now() -> Result<f64, JsValue> {
+pub fn now() -> Result<f64> {
     Ok(window()?
         .performance()
-        .ok_or_else(|| JsValue::from("Performance object not found"))?
+        .ok_or_else(|| anyhow!("Performance object not found"))?
         .now())
 }
