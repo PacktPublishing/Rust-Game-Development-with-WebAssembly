@@ -33,6 +33,7 @@ pub struct WalkTheDog {
     sheet: Option<Sheet>,
     frame: u8,
     position: Point,
+    velocity: Point,
 }
 
 impl WalkTheDog {
@@ -42,6 +43,7 @@ impl WalkTheDog {
             sheet: None,
             frame: 0,
             position: Point { x: 0, y: 0 },
+            velocity: Point { x: 0, y: 0 },
         }
     }
 }
