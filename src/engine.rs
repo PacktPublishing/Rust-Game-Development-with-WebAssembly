@@ -159,14 +159,11 @@ fn process_input(state: &mut KeyState, keyevent_receiver: &mut UnboundedReceiver
     loop {
         match keyevent_receiver.try_next() {
             Ok(None) => break,
+            Err(_err) => break,
             Ok(Some(evt)) => match evt {
                 KeyPress::KeyUp(evt) => state.pressed_keys.remove(&evt.code()),
                 KeyPress::KeyDown(evt) => state.pressed_keys.insert(evt.code(), evt),
             },
-            Err(err) => {
-                log!("Nothing found, not closed {:#?}", err);
-                break;
-            }
         };
     }
 }

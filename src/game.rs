@@ -29,12 +29,20 @@ pub struct Sheet {
 
 const GRAVITY: i16 = 1;
 
+enum RedHatBoy {
+    Idle,
+    Running,
+    Jumping,
+    Sliding,
+}
+
 pub struct WalkTheDog {
     image: Option<HtmlImageElement>,
     sheet: Option<Sheet>,
     frame: u8,
     position: Point,
     velocity: Point,
+    state: RedHatBoy,
 }
 
 impl WalkTheDog {
@@ -45,6 +53,7 @@ impl WalkTheDog {
             frame: 0,
             position: Point { x: 0, y: 478 },
             velocity: Point { x: 0, y: 0 },
+            state: RedHatBoy::Idle,
         }
     }
 }
@@ -61,18 +70,44 @@ impl Game for WalkTheDog {
     }
 
     fn update(&mut self, keystate: &KeyState) {
-        if keystate.is_pressed("Space") && self.velocity.y == 0 {
-            self.velocity.y = -25;
-        } else if self.position.y < 478 {
-            self.velocity.y += GRAVITY;
-        } else if self.position.y >= 478 {
-            self.velocity.y = 0;
-            self.position.y = 478;
+        match &self.state {
+            RedHatBoy::Idle => {
+                if keystate.is_pressed("ArrowRight") {
+                    self.state = RedHatBoy::Running;
+                    self.frame = 0;
+                }
+            }
+            RedHatBoy::Running => {
+                if keystate.is_pressed("Space") {
+                    self.velocity.y = -25;
+                    self.state = RedHatBoy::Jumping;
+                    self.frame = 0;
+                }
+            }
+            RedHatBoy::Jumping => {
+                self.velocity.y += GRAVITY;
+                if self.position.y >= 478 {
+                    self.velocity.y = 0;
+                    self.position.y = 478;
+                    self.state = RedHatBoy::Running;
+                    self.frame = 0;
+                }
+            }
+            RedHatBoy::Sliding => {}
         }
 
+        let frame_count = match &self.state {
+            RedHatBoy::Idle => 10,
+            RedHatBoy::Running => 8,
+            RedHatBoy::Jumping => 12,
+            RedHatBoy::Sliding => 5,
+        };
+
+        self.position.x += self.velocity.x;
         self.position.y = self.position.y + self.velocity.y;
 
-        if self.frame < 23 {
+        // Run at 20 FPS for the animation, not 60
+        if self.frame < ((frame_count * 3) - 1) {
             self.frame += 1;
         } else {
             self.frame = 0;
@@ -80,9 +115,14 @@ impl Game for WalkTheDog {
     }
 
     fn draw(&self, renderer: &Renderer) {
-        let current_sprite = (self.frame / 3) + 1;
-        let frame_name = format!("Run ({}).png", current_sprite);
-
+        let prefix = match &self.state {
+            RedHatBoy::Idle => "Idle",
+            RedHatBoy::Running => "Run",
+            RedHatBoy::Jumping => "Jump",
+            RedHatBoy::Sliding => "Slide",
+        };
+        let frame_name = format!("({}).png", (self.frame / 3) + 1);
+        let frame_name = format!("{} {}", prefix, frame_name);
         let sprite = self
             .sheet
             .as_ref()
