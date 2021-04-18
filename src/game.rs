@@ -70,6 +70,13 @@ impl Game for WalkTheDog {
     }
 
     fn update(&mut self, keystate: &KeyState) {
+        let frame_count = match &self.state {
+            RedHatBoy::Idle => 10,
+            RedHatBoy::Running => 8,
+            RedHatBoy::Jumping => 12,
+            RedHatBoy::Sliding => 5,
+        };
+
         match &self.state {
             RedHatBoy::Idle => {
                 if keystate.is_pressed("ArrowRight") {
@@ -83,6 +90,10 @@ impl Game for WalkTheDog {
                     self.state = RedHatBoy::Jumping;
                     self.frame = 0;
                 }
+                if keystate.is_pressed("ArrowDown") {
+                    self.state = RedHatBoy::Sliding;
+                    self.current_frame = 0;
+                }
             }
             RedHatBoy::Jumping => {
                 self.velocity.y += GRAVITY;
@@ -93,15 +104,13 @@ impl Game for WalkTheDog {
                     self.frame = 0;
                 }
             }
-            RedHatBoy::Sliding => {}
+            RedHatBoy::Sliding => {
+                if self.current_frame >= (frame_count * 3) - 1 {
+                    self.current_frame = 0;
+                    self.state = RedHatBoy::Idle;
+                }
+            }
         }
-
-        let frame_count = match &self.state {
-            RedHatBoy::Idle => 10,
-            RedHatBoy::Running => 8,
-            RedHatBoy::Jumping => 12,
-            RedHatBoy::Sliding => 5,
-        };
 
         self.position.x += self.velocity.x;
         self.position.y = self.position.y + self.velocity.y;
