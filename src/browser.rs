@@ -16,19 +16,17 @@ macro_rules! log {
 }
 
 pub fn window() -> Result<Window> {
-    web_sys::window().ok_or_else(|| anyhow!("No Window Found"))
+    web_sys::window().ok_or(anyhow!("No Window Found"))
 }
 
 pub fn document() -> Result<Document> {
-    window()?
-        .document()
-        .ok_or_else(|| anyhow!("No Document Found"))
+    window()?.document().ok_or(anyhow!("No Document Found"))
 }
 
 pub fn canvas() -> Result<HtmlCanvasElement> {
     document()?
         .get_element_by_id("canvas")
-        .ok_or_else(|| anyhow!("No Canvas Element found with ID 'canvas'"))?
+        .ok_or(anyhow!("No Canvas Element found with ID 'canvas'"))?
         .dyn_into::<web_sys::HtmlCanvasElement>()
         .map_err(|element| anyhow!("Error converting {:#?} to HtmlCanvasElement", element))
 }
@@ -37,7 +35,7 @@ pub fn context() -> Result<CanvasRenderingContext2d> {
     canvas()?
         .get_context("2d")
         .map_err(|js_value| anyhow!("Error getting 2d context {:#?}", js_value))?
-        .ok_or_else(|| anyhow!("No 2d context found"))?
+        .ok_or(anyhow!("No 2d context found"))?
         .dyn_into::<web_sys::CanvasRenderingContext2d>()
         .map_err(|element| {
             anyhow!(
