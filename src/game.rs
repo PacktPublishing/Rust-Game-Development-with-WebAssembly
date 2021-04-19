@@ -140,7 +140,7 @@ impl Game for WalkTheDog {
                 &background,
                 &Rect {
                     x: 0.0,
-                    y: 0.0,
+                    y: 51.0,
                     width: 600.0,
                     height: 600.0,
                 },
