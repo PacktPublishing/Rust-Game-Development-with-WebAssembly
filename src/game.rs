@@ -38,6 +38,7 @@ enum RedHatBoy {
 
 pub struct WalkTheDog {
     image: Option<HtmlImageElement>,
+    background: Option<HtmlImageElement>,
     sheet: Option<Sheet>,
     frame: u8,
     position: Point,
@@ -51,6 +52,7 @@ impl WalkTheDog {
             image: None,
             sheet: None,
             frame: 0,
+            background: None,
             position: Point { x: 0, y: 478 },
             velocity: Point { x: 0, y: 0 },
             state: RedHatBoy::Idle,
@@ -65,6 +67,8 @@ impl Game for WalkTheDog {
 
         self.sheet = json.into_serde()?;
         self.image = Some(engine::load_image("rhb.png").await?);
+
+        self.background = Some(engine::load_image("BG.png").await?);
 
         Ok(())
     }
@@ -92,7 +96,7 @@ impl Game for WalkTheDog {
                 }
                 if keystate.is_pressed("ArrowDown") {
                     self.state = RedHatBoy::Sliding;
-                    self.current_frame = 0;
+                    self.frame = 0;
                 }
             }
             RedHatBoy::Jumping => {
@@ -105,8 +109,8 @@ impl Game for WalkTheDog {
                 }
             }
             RedHatBoy::Sliding => {
-                if self.current_frame >= (frame_count * 3) - 1 {
-                    self.current_frame = 0;
+                if self.frame >= (frame_count * 3) - 1 {
+                    self.frame = 0;
                     self.state = RedHatBoy::Idle;
                 }
             }
@@ -124,6 +128,30 @@ impl Game for WalkTheDog {
     }
 
     fn draw(&self, renderer: &Renderer) {
+        renderer.clear(&Rect {
+            x: 0.0,
+            y: 0.0,
+            width: 600.0,
+            height: 600.0,
+        });
+
+        if let Some(background) = &self.background {
+            renderer.draw_image(
+                &background,
+                &Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 600.0,
+                    height: 600.0,
+                },
+                &Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 600.0,
+                    height: 600.0,
+                },
+            );
+        }
         let prefix = match &self.state {
             RedHatBoy::Idle => "Idle",
             RedHatBoy::Running => "Run",
@@ -138,12 +166,6 @@ impl Game for WalkTheDog {
             .and_then(|sheet| sheet.frames.get(&frame_name))
             .expect("Cell not found");
 
-        renderer.clear(&Rect {
-            x: 0.0,
-            y: 0.0,
-            width: 600.0,
-            height: 600.0,
-        });
         self.image.as_ref().map(|image| {
             renderer.draw_image(
                 &image,
