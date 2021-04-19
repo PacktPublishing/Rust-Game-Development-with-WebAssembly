@@ -77,7 +77,7 @@ pub fn new_image() -> Result<HtmlImageElement> {
 }
 
 pub type LoopClosure = Closure<dyn FnMut(f64)>;
-pub fn loop_fn(f: impl FnMut(f64) + 'static) -> LoopClosure {
+pub fn create_raf_closure(f: impl FnMut(f64) + 'static) -> LoopClosure {
     closure_wrap(Box::new(f))
 }
 
