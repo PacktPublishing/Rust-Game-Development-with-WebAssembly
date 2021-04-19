@@ -53,7 +53,7 @@ impl WalkTheDog {
             sheet: None,
             frame: 0,
             background: None,
-            position: Point { x: 0, y: 478 },
+            position: Point { x: 0, y: 464 },
             velocity: Point { x: 0, y: 0 },
             state: RedHatBoy::Idle,
         }
@@ -135,23 +135,8 @@ impl Game for WalkTheDog {
             height: 600.0,
         });
 
-        if let Some(background) = &self.background {
-            renderer.draw_image(
-                &background,
-                &Rect {
-                    x: 0.0,
-                    y: 51.0,
-                    width: 600.0,
-                    height: 600.0,
-                },
-                &Rect {
-                    x: 0.0,
-                    y: 0.0,
-                    width: 600.0,
-                    height: 600.0,
-                },
-            );
-        }
+        self.draw_background(renderer);
+
         let prefix = match &self.state {
             RedHatBoy::Idle => "Idle",
             RedHatBoy::Running => "Run",
@@ -183,5 +168,27 @@ impl Game for WalkTheDog {
                 },
             );
         });
+    }
+}
+
+impl WalkTheDog {
+    fn draw_background(&self, renderer: &Renderer) {
+        if let Some(background) = &self.background {
+            renderer.draw_image(
+                &background,
+                &Rect {
+                    x: 0.0,
+                    y: 51.0,
+                    width: 600.0,
+                    height: 600.0,
+                },
+                &Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 600.0,
+                    height: 600.0,
+                },
+            );
+        }
     }
 }
