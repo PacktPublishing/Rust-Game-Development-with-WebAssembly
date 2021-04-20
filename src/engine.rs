@@ -106,7 +106,7 @@ impl GameLoop {
         };
 
         let renderer = Renderer {
-            context: browser::context().expect("No context found"),
+            context: browser::context()?,
         };
 
         let f: SharedLoopClosure = Rc::new(RefCell::new(None));
