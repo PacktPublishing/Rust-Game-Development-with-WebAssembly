@@ -26,8 +26,7 @@ pub struct Sheet {
 pub struct WalkTheDog {
     image: HtmlImageElement,
     sheet: Sheet,
-    frame_count: u8,
-    current_frame: u8,
+    frame: u8,
 }
 
 impl WalkTheDog {
@@ -35,26 +34,23 @@ impl WalkTheDog {
         WalkTheDog {
             image,
             sheet,
-            current_frame: 0,
-            frame_count: 0,
+            frame: 0,
         }
     }
 }
 
 impl Game for WalkTheDog {
     fn update(&mut self) {
-        if self.frame_count < 24 {
-            self.frame_count += 1;
+        if self.frame < 23 {
+            self.frame += 1;
         } else {
-            self.frame_count = 0;
-        }
-        if (self.frame_count % 3) == 0 {
-            self.current_frame = (self.current_frame + 1) % 8;
+            self.frame = 0;
         }
     }
 
     fn draw(&self, renderer: &Renderer) {
-        let frame_name = format!("Run ({}).png", self.current_frame + 1);
+        let current_sprite = (self.frame / 3) + 1;
+        let frame_name = format!("Run ({}).png", current_sprite);
         let sprite = self.sheet.frames.get(&frame_name).expect("Cell not found");
 
         renderer.clear(&Rect {
