@@ -46,6 +46,8 @@ pub struct WalkTheDog {
     state: RedHatBoy,
 }
 
+// Idle Box x: 60 y: w: h:  (height adjustment, move down 16px)
+
 impl WalkTheDog {
     pub fn new() -> Self {
         WalkTheDog {
@@ -53,7 +55,7 @@ impl WalkTheDog {
             sheet: None,
             frame: 0,
             background: None,
-            position: Point { x: 0, y: 464 },
+            position: Point { x: 0, y: 485 },
             velocity: Point { x: 0, y: 0 },
             state: RedHatBoy::Idle,
         }
@@ -145,6 +147,7 @@ impl Game for WalkTheDog {
         };
         let frame_name = format!("({}).png", (self.frame / 3) + 1);
         let frame_name = format!("{} {}", prefix, frame_name);
+        let frame_name = format!("Idle (1).png");
         let sprite = self
             .sheet
             .as_ref()
