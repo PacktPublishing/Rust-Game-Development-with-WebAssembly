@@ -150,6 +150,14 @@ impl KeyState {
     pub fn is_pressed(&self, code: &str) -> bool {
         self.pressed_keys.contains_key(code)
     }
+
+    fn set_pressed(&mut self, code: &str, event: web_sys::KeyboardEvent) {
+        self.pressed_keys.insert(code.into(), event);
+    }
+
+    fn set_released(&mut self, code: &str) {
+        self.pressed_keys.remove(code.into());
+    }
 }
 
 enum KeyPress {
@@ -161,11 +169,15 @@ fn process_input(state: &mut KeyState, keyevent_receiver: &mut UnboundedReceiver
     loop {
         match keyevent_receiver.try_next() {
             Ok(None) => break,
-            Err(_err) => break,
-            Ok(Some(evt)) => match evt {
-                KeyPress::KeyUp(evt) => state.pressed_keys.remove(&evt.code()),
-                KeyPress::KeyDown(evt) => state.pressed_keys.insert(evt.code(), evt),
-            },
+            Err(err) => {
+                log!("Error receiving keypress: {:#?}", err);
+            }
+            Ok(Some(evt)) => {
+                match evt {
+                    KeyPress::KeyUp(evt) => state.set_released(&evt.code()),
+                    KeyPress::KeyDown(evt) => state.set_pressed(&evt.code(), evt),
+                };
+            }
         };
     }
 }
