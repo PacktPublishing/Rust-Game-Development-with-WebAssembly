@@ -194,8 +194,8 @@ fn prepare_input() -> Result<UnboundedReceiver<KeyPress>> {
             .start_send(KeyPress::KeyUp(keycode));
     }) as Box<dyn FnMut(web_sys::KeyboardEvent)>);
 
-    browser::window()?.set_onkeydown(Some(onkeydown.as_ref().unchecked_ref()));
-    browser::window()?.set_onkeyup(Some(onkeyup.as_ref().unchecked_ref()));
+    browser::canvas()?.set_onkeydown(Some(onkeydown.as_ref().unchecked_ref()));
+    browser::canvas()?.set_onkeyup(Some(onkeyup.as_ref().unchecked_ref()));
     onkeydown.forget();
     onkeyup.forget();
 
