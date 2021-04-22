@@ -147,7 +147,7 @@ impl Game for WalkTheDog {
         };
         let frame_name = format!("({}).png", (self.frame / 3) + 1);
         let frame_name = format!("{} {}", prefix, frame_name);
-        let frame_name = format!("Idle (1).png");
+        //        let frame_name = format!("Idle (1).png");
         let sprite = self
             .sheet
             .as_ref()
