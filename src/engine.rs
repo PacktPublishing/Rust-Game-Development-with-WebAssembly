@@ -169,15 +169,11 @@ fn process_input(state: &mut KeyState, keyevent_receiver: &mut UnboundedReceiver
     loop {
         match keyevent_receiver.try_next() {
             Ok(None) => break,
-            Err(err) => {
-                log!("Error receiving keypress: {:#?}", err);
-            }
-            Ok(Some(evt)) => {
-                match evt {
-                    KeyPress::KeyUp(evt) => state.set_released(&evt.code()),
-                    KeyPress::KeyDown(evt) => state.set_pressed(&evt.code(), evt),
-                };
-            }
+            Err(_err) => break,
+            Ok(Some(evt)) => match evt {
+                KeyPress::KeyUp(evt) => state.set_released(&evt.code()),
+                KeyPress::KeyDown(evt) => state.set_pressed(&evt.code(), evt),
+            },
         };
     }
 }
