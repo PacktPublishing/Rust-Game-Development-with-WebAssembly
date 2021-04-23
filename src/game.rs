@@ -18,8 +18,10 @@ struct SheetRect {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
 struct Cell {
     frame: SheetRect,
+    sprite_source_size: SheetRect,
 }
 
 #[derive(Deserialize)]
@@ -45,8 +47,6 @@ pub struct WalkTheDog {
     velocity: Point,
     state: RedHatBoy,
 }
-
-// Idle Box x: 60 y: w: h:  (height adjustment, move down 16px)
 
 impl WalkTheDog {
     pub fn new() -> Self {
@@ -147,12 +147,29 @@ impl Game for WalkTheDog {
         };
         let frame_name = format!("({}).png", (self.frame / 3) + 1);
         let frame_name = format!("{} {}", prefix, frame_name);
-        //        let frame_name = format!("Idle (1).png");
+
+        let first_frame_name = format!("{} (1).png", prefix);
         let sprite = self
             .sheet
             .as_ref()
             .and_then(|sheet| sheet.frames.get(&frame_name))
             .expect("Cell not found");
+
+        let first_sprite = self
+            .sheet
+            .as_ref()
+            .and_then(|sheet| sheet.frames.get(&first_frame_name))
+            .expect("Cell not found");
+
+        let adjustment = Point {
+            x: sprite.sprite_source_size.x as i16 - first_sprite.sprite_source_size.x as i16,
+            y: sprite.sprite_source_size.y as i16 - first_sprite.sprite_source_size.y as i16,
+        };
+
+        let additional_offset_y = match self.state {
+            RedHatBoy::Sliding => 15,
+            _ => 0,
+        };
 
         self.image.as_ref().map(|image| {
             renderer.draw_image(
@@ -164,8 +181,8 @@ impl Game for WalkTheDog {
                     height: sprite.frame.h.into(),
                 },
                 &Rect {
-                    x: self.position.x.into(),
-                    y: self.position.y.into(),
+                    x: (self.position.x as i16 + adjustment.x).into(),
+                    y: (self.position.y as i16 + adjustment.y + additional_offset_y).into(),
                     width: sprite.frame.w.into(),
                     height: sprite.frame.h.into(),
                 },
