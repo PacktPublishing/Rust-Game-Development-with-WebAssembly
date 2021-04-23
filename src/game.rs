@@ -6,7 +6,7 @@ use web_sys::HtmlImageElement;
 
 use crate::{
     browser,
-    engine::{self, Game, KeyState, Point, Rect, Renderer},
+    engine::{self, Game, KeyState, Point, Rect, Renderer, Vector},
 };
 
 #[derive(Deserialize)]
@@ -29,7 +29,7 @@ pub struct Sheet {
     frames: HashMap<String, Cell>,
 }
 
-const GRAVITY: i16 = 1;
+const GRAVITY: f32 = 1.5;
 
 enum RedHatBoy {
     Idle,
@@ -44,7 +44,7 @@ pub struct WalkTheDog {
     sheet: Option<Sheet>,
     frame: u8,
     position: Point,
-    velocity: Point,
+    velocity: Vector,
     state: RedHatBoy,
 }
 
@@ -56,7 +56,7 @@ impl WalkTheDog {
             frame: 0,
             background: None,
             position: Point { x: 0, y: 485 },
-            velocity: Point { x: 0, y: 0 },
+            velocity: Vector { x: 0.0, y: 0.0 },
             state: RedHatBoy::Idle,
         }
     }
@@ -92,7 +92,7 @@ impl Game for WalkTheDog {
             }
             RedHatBoy::Running => {
                 if keystate.is_pressed("Space") {
-                    self.velocity.y = -25;
+                    self.velocity.y = -25.0;
                     self.state = RedHatBoy::Jumping;
                     self.frame = 0;
                 }
@@ -104,7 +104,7 @@ impl Game for WalkTheDog {
             RedHatBoy::Jumping => {
                 self.velocity.y += GRAVITY;
                 if self.position.y >= 478 {
-                    self.velocity.y = 0;
+                    self.velocity.y = 0.0;
                     self.position.y = 478;
                     self.state = RedHatBoy::Running;
                     self.frame = 0;
@@ -118,8 +118,8 @@ impl Game for WalkTheDog {
             }
         }
 
-        self.position.x += self.velocity.x;
-        self.position.y = self.position.y + self.velocity.y;
+        self.position.x += self.velocity.x as i16;
+        self.position.y = self.position.y + self.velocity.y as i16;
 
         // Run at 20 FPS for the animation, not 60
         if self.frame < ((frame_count * 3) - 1) {

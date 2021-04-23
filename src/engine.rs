@@ -15,6 +15,12 @@ pub struct Point {
     pub y: i16,
 }
 
+#[derive(Debug)]
+pub struct Vector {
+    pub x: f32,
+    pub y: f32,
+}
+
 pub struct Rect {
     pub x: f32,
     pub y: f32,
