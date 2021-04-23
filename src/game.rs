@@ -87,6 +87,13 @@ impl Game for WalkTheDog {
             RedHatBoy::Idle => {
                 if keystate.is_pressed("ArrowRight") {
                     self.state = RedHatBoy::Running;
+                    self.velocity.x = 4.0;
+                    self.frame = 0;
+                }
+
+                if keystate.is_pressed("ArrowLeft") {
+                    self.state = RedHatBoy::Running;
+                    self.velocity.x = -4.0;
                     self.frame = 0;
                 }
             }
@@ -99,6 +106,18 @@ impl Game for WalkTheDog {
                 if keystate.is_pressed("ArrowDown") {
                     self.state = RedHatBoy::Sliding;
                     self.frame = 0;
+                }
+                if keystate.is_pressed("ArrowRight") {
+                    if self.velocity.x != 4.0 {
+                        self.velocity.x = 4.0;
+                        self.frame = 0;
+                    }
+                }
+                if keystate.is_pressed("ArrowLeft") {
+                    if self.velocity.x != -4.0 {
+                        self.velocity.x = -4.0;
+                        self.frame = 0;
+                    }
                 }
             }
             RedHatBoy::Jumping => {
