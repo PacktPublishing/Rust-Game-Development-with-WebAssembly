@@ -5,6 +5,7 @@ use futures::channel::{
     mpsc::{unbounded, UnboundedReceiver},
     oneshot::channel,
 };
+use serde::Deserialize;
 use std::{cell::RefCell, collections::HashMap, rc::Rc, sync::Mutex};
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::{CanvasRenderingContext2d, HtmlImageElement};
@@ -26,6 +27,98 @@ pub struct Rect {
     pub y: f32,
     pub width: f32,
     pub height: f32,
+}
+
+#[derive(Deserialize)]
+struct SheetRect {
+    x: u16,
+    y: u16,
+    w: u16,
+    h: u16,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Cell {
+    frame: SheetRect,
+    sprite_source_size: SheetRect,
+}
+
+#[derive(Deserialize)]
+pub struct Sheet {
+    frames: HashMap<String, Cell>,
+}
+
+pub struct Sprite {
+    image: HtmlImageElement,
+    sheet: Sheet,
+    animations: Vec<String>,
+    adjustments: HashMap<String, Vec<Point>>,
+}
+
+impl Sprite {
+    pub fn new(image: HtmlImageElement, sheet: Sheet, animations: Vec<String>) -> Self {
+        let mut adjustments = HashMap::new();
+        animations.iter().for_each(|animation| {
+            if let Some(first_frame) = sheet.frames.get(&format!("{} (1).png", animation)) {
+                let mut adjustments_vec = vec![Point { x: 0, y: 0 }];
+
+                let mut frame_index = 2;
+                while let Some(frame) = sheet
+                    .frames
+                    .get(&format!("{} ({}).png", animation, frame_index))
+                {
+                    let adjustment = Point {
+                        x: frame.sprite_source_size.x as i16
+                            - first_frame.sprite_source_size.x as i16,
+                        y: frame.sprite_source_size.y as i16
+                            - first_frame.sprite_source_size.y as i16,
+                    };
+                    adjustments_vec.push(adjustment);
+                    frame_index += 1;
+                }
+                adjustments.insert(animation.into(), adjustments_vec);
+            }
+        });
+
+        Sprite {
+            image,
+            sheet,
+            animations,
+            adjustments,
+        }
+    }
+
+    pub fn draw(&self, renderer: &Renderer, animation: &str, frame: &i16, position: &Point) {
+        log!("{} ({}).png", animation, frame + 1);
+        let sprite = self
+            .sheet
+            .frames
+            .get(&format!("{} ({}).png", animation, frame + 1))
+            .expect("Cell not found");
+
+        let adjustment = self
+            .adjustments
+            .get(animation)
+            .and_then(|adjustments| adjustments.get(*frame as usize))
+            .unwrap_or(&Point { x: 0, y: 0 });
+
+        renderer.draw_image(
+            &self.image,
+            &Rect {
+                x: sprite.frame.x.into(),
+                y: sprite.frame.y.into(),
+                width: sprite.frame.w.into(),
+                height: sprite.frame.h.into(),
+            },
+            &Rect {
+                x: (position.x as i16 + adjustment.x).into(),
+                y: (position.y as i16 + adjustment.y).into(),
+                width: sprite.frame.w.into(),
+                height: sprite.frame.h.into(),
+            },
+        );
+    }
 }
 
 pub struct Renderer {

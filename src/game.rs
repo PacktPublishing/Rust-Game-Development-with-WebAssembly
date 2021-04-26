@@ -6,7 +6,7 @@ use web_sys::HtmlImageElement;
 
 use crate::{
     browser,
-    engine::{self, Game, KeyState, Point, Rect, Renderer, Vector},
+    engine::{self, Game, KeyState, Point, Rect, Renderer, Sprite, Vector},
 };
 
 #[derive(Deserialize)]
@@ -46,6 +46,7 @@ pub struct WalkTheDog {
     position: Point,
     velocity: Vector,
     state: RedHatBoy,
+    sprite: Option<Sprite>,
 }
 
 impl WalkTheDog {
@@ -58,6 +59,7 @@ impl WalkTheDog {
             position: Point { x: 0, y: 485 },
             velocity: Vector { x: 0.0, y: 0.0 },
             state: RedHatBoy::Idle,
+            sprite: None,
         }
     }
 }
@@ -67,10 +69,21 @@ impl Game for WalkTheDog {
     async fn initialize(&mut self) -> Result<()> {
         let json = browser::fetch_json("rhb.json").await?;
 
-        self.sheet = json.into_serde()?;
-        self.image = Some(engine::load_image("rhb.png").await?);
+        let sheet = json.into_serde()?;
+        let image = engine::load_image("rhb.png").await?;
 
         self.background = Some(engine::load_image("BG.png").await?);
+
+        self.sprite = Some(Sprite::new(
+            image,
+            sheet,
+            vec![
+                "Idle".to_string(),
+                "Run".to_string(),
+                "Jump".to_string(),
+                "Slide".to_string(),
+            ],
+        ));
 
         Ok(())
     }
@@ -141,11 +154,12 @@ impl Game for WalkTheDog {
         self.position.y = self.position.y + self.velocity.y as i16;
 
         // Run at 20 FPS for the animation, not 60
-        if self.frame < ((frame_count * 3) - 1) {
+        if self.frame < (frame_count * 3) - 1 {
             self.frame += 1;
         } else {
             self.frame = 0;
         }
+        log!("Frame is {}", self.frame);
     }
 
     fn draw(&self, renderer: &Renderer) {
@@ -158,55 +172,25 @@ impl Game for WalkTheDog {
 
         self.draw_background(renderer);
 
-        let prefix = match &self.state {
+        let animation = match &self.state {
             RedHatBoy::Idle => "Idle",
             RedHatBoy::Running => "Run",
             RedHatBoy::Jumping => "Jump",
             RedHatBoy::Sliding => "Slide",
         };
-        let frame_name = format!("({}).png", (self.frame / 3) + 1);
-        let frame_name = format!("{} {}", prefix, frame_name);
 
-        let first_frame_name = format!("{} (1).png", prefix);
-        let sprite = self
-            .sheet
-            .as_ref()
-            .and_then(|sheet| sheet.frames.get(&frame_name))
-            .expect("Cell not found");
-
-        let first_sprite = self
-            .sheet
-            .as_ref()
-            .and_then(|sheet| sheet.frames.get(&first_frame_name))
-            .expect("Cell not found");
-
-        let adjustment = Point {
-            x: sprite.sprite_source_size.x as i16 - first_sprite.sprite_source_size.x as i16,
-            y: sprite.sprite_source_size.y as i16 - first_sprite.sprite_source_size.y as i16,
-        };
-
+        if let Some(sprite) = &self.sprite {
+            sprite.draw(
+                renderer,
+                animation,
+                &(self.frame / 3).into(),
+                &self.position,
+            );
+        }
         let additional_offset_y = match self.state {
             RedHatBoy::Sliding => 15,
             _ => 0,
         };
-
-        self.image.as_ref().map(|image| {
-            renderer.draw_image(
-                &image,
-                &Rect {
-                    x: sprite.frame.x.into(),
-                    y: sprite.frame.y.into(),
-                    width: sprite.frame.w.into(),
-                    height: sprite.frame.h.into(),
-                },
-                &Rect {
-                    x: (self.position.x as i16 + adjustment.x).into(),
-                    y: (self.position.y as i16 + adjustment.y + additional_offset_y).into(),
-                    width: sprite.frame.w.into(),
-                    height: sprite.frame.h.into(),
-                },
-            );
-        });
     }
 }
 
