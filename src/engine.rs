@@ -90,7 +90,6 @@ impl Sprite {
     }
 
     pub fn draw(&self, renderer: &Renderer, animation: &str, frame: &i16, position: &Point) {
-        log!("{} ({}).png", animation, frame + 1);
         let sprite = self
             .sheet
             .frames
