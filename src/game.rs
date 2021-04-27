@@ -6,7 +6,7 @@ use web_sys::HtmlImageElement;
 
 use crate::{
     browser,
-    engine::{self, Game, KeyState, Point, Rect, Renderer, Sprite, Vector},
+    engine::{self, Game, KeyState, Point, Rect, Renderer, SpriteSheet, Vector},
 };
 
 #[derive(Deserialize)]
@@ -46,7 +46,7 @@ pub struct WalkTheDog {
     position: Point,
     velocity: Vector,
     state: RedHatBoy,
-    sprite: Option<Sprite>,
+    sprite: Option<SpriteSheet>,
 }
 
 impl WalkTheDog {
@@ -74,7 +74,7 @@ impl Game for WalkTheDog {
 
         self.background = Some(engine::load_image("BG.png").await?);
 
-        self.sprite = Some(Sprite::new(
+        self.sprite = Some(SpriteSheet::new(
             image,
             sheet,
             vec![

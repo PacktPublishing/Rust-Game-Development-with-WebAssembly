@@ -49,14 +49,14 @@ pub struct Sheet {
     frames: HashMap<String, Cell>,
 }
 
-pub struct Sprite {
+pub struct SpriteSheet {
     image: HtmlImageElement,
     sheet: Sheet,
     animations: Vec<String>,
     adjustments: HashMap<String, Vec<Point>>,
 }
 
-impl Sprite {
+impl SpriteSheet {
     pub fn new(image: HtmlImageElement, sheet: Sheet, animations: Vec<String>) -> Self {
         let mut adjustments = HashMap::new();
         animations.iter().for_each(|animation| {
@@ -81,7 +81,7 @@ impl Sprite {
             }
         });
 
-        Sprite {
+        SpriteSheet {
             image,
             sheet,
             animations,
