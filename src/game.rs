@@ -159,7 +159,6 @@ impl Game for WalkTheDog {
         } else {
             self.frame = 0;
         }
-        log!("Frame is {}", self.frame);
     }
 
     fn draw(&self, renderer: &Renderer) {
