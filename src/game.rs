@@ -163,7 +163,7 @@ impl RedHatBoyWrapper {
     }
 
     fn run(mut self) -> Self {
-        self = match self {
+        match self {
             RedHatBoyWrapper::Idle(val) => RedHatBoyWrapper::Running(val.into()),
             RedHatBoyWrapper::Running(mut val) => {
                 val.velocity.x += 4.0;
@@ -173,32 +173,29 @@ impl RedHatBoyWrapper {
                 RedHatBoyWrapper::Running(val)
             }
             RedHatBoyWrapper::Jumping(_) | RedHatBoyWrapper::Sliding(_) => self,
-        };
-        self
+        }
     }
 
     fn jump(mut self) -> Self {
-        self = match self {
+        match self {
             RedHatBoyWrapper::Running(val) => RedHatBoyWrapper::Jumping(val.into()),
             RedHatBoyWrapper::Idle(_)
             | RedHatBoyWrapper::Jumping(_)
             | RedHatBoyWrapper::Sliding(_) => self,
-        };
-        self
+        }
     }
 
     fn slide(mut self) -> Self {
-        self = match self {
+        match self {
             RedHatBoyWrapper::Running(val) => RedHatBoyWrapper::Sliding(val.into()),
             RedHatBoyWrapper::Idle(_)
             | RedHatBoyWrapper::Jumping(_)
             | RedHatBoyWrapper::Sliding(_) => self,
-        };
-        self
+        }
     }
 
     fn moonwalk(mut self) -> Self {
-        self = match self {
+        match self {
             RedHatBoyWrapper::Running(mut val) => {
                 val.velocity.x -= 4.0;
                 // TODO Update Rust, use f32::clamp
@@ -210,14 +207,13 @@ impl RedHatBoyWrapper {
             RedHatBoyWrapper::Idle(_)
             | RedHatBoyWrapper::Jumping(_)
             | RedHatBoyWrapper::Sliding(_) => self,
-        };
-        self
+        }
     }
 
     fn update(mut self) -> Self {
         let frame_count = self.frame_count();
 
-        self = match self {
+        match self {
             RedHatBoyWrapper::Jumping(mut val) => {
                 val.velocity.y += GRAVITY;
                 val.position.x += val.velocity.x as i16;
@@ -271,9 +267,7 @@ impl RedHatBoyWrapper {
 
                 RedHatBoyWrapper::Running(val)
             }
-        };
-
-        self
+        }
     }
 }
 
