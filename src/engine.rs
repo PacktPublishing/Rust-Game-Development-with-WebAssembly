@@ -90,11 +90,12 @@ impl SpriteSheet {
     }
 
     pub fn draw(&self, renderer: &Renderer, animation: &str, frame: &i16, position: &Point) {
+        let cell = format!("{} ({}).png", animation, frame + 1);
         let sprite = self
             .sheet
             .frames
-            .get(&format!("{} ({}).png", animation, frame + 1))
-            .expect("Cell not found");
+            .get(&cell)
+            .expect(&format!("Cell {} not found", cell));
 
         let adjustment = self
             .adjustments
