@@ -36,6 +36,7 @@ struct RedHatBoyMachine<S> {
     velocity: Vector,
     position: Point,
     state: S,
+    object: GameObject,
 }
 
 struct Idle;
@@ -45,11 +46,18 @@ struct Sliding;
 
 impl RedHatBoyMachine<Idle> {
     fn new() -> Self {
+        let game_object = GameObject {
+            frame: 0,
+            position: engine::Point { x: 0, y: 485 },
+            velocity: Vector { x: 0.0, y: 0.0 },
+        };
+
         RedHatBoyMachine {
             frame: 0,
             velocity: Vector { x: 0.0, y: 0.0 },
             position: Point { x: 0, y: 485 },
             state: Idle {},
+            object: game_object,
         }
     }
 }
@@ -61,7 +69,20 @@ impl From<RedHatBoyMachine<Idle>> for RedHatBoyMachine<Running> {
             position: machine.position,
             velocity: Vector { x: 4.0, y: 0.0 },
             state: Running {},
+            object: machine.object.go_right(),
         }
+    }
+}
+
+impl RedHatBoyMachine<Running> {
+    fn go_right(mut self) -> Self {
+        self.object = self.object.go_right();
+        self
+    }
+
+    fn go_left(mut self) -> Self {
+        self.object = self.object.go_left();
+        self
     }
 }
 
@@ -72,6 +93,7 @@ impl From<RedHatBoyMachine<Running>> for RedHatBoyMachine<Sliding> {
             position: machine.position,
             velocity: machine.velocity,
             state: Sliding {},
+            object: machine.object.reset_frame(),
         }
     }
 }
@@ -86,6 +108,7 @@ impl From<RedHatBoyMachine<Running>> for RedHatBoyMachine<Jumping> {
                 y: -25.0,
             },
             state: Jumping {},
+            object: machine.object.jump(),
         }
     }
 }
@@ -100,6 +123,7 @@ impl From<RedHatBoyMachine<Jumping>> for RedHatBoyMachine<Running> {
                 y: 0.0,
             },
             state: Running {},
+            object: machine.object.land(),
         }
     }
 }
@@ -114,6 +138,7 @@ impl From<RedHatBoyMachine<Sliding>> for RedHatBoyMachine<Running> {
                 y: 0.0,
             },
             state: Running {},
+            object: machine.object.reset_frame(),
         }
     }
 }
@@ -126,6 +151,15 @@ enum RedHatBoyWrapper {
 }
 
 impl RedHatBoyWrapper {
+    fn game_object(&self) -> &GameObject {
+        match self {
+            RedHatBoyWrapper::Idle(val) => &val.object,
+            RedHatBoyWrapper::Running(val) => &val.object,
+            RedHatBoyWrapper::Jumping(val) => &val.object,
+            RedHatBoyWrapper::Sliding(val) => &val.object,
+        }
+    }
+
     fn frame_count(&self) -> u8 {
         match self {
             RedHatBoyWrapper::Idle(_) => 10,
@@ -144,126 +178,64 @@ impl RedHatBoyWrapper {
         }
     }
 
-    fn frame(&self) -> u8 {
-        match self {
-            RedHatBoyWrapper::Idle(val) => val.frame,
-            RedHatBoyWrapper::Running(val) => val.frame,
-            RedHatBoyWrapper::Jumping(val) => val.frame,
-            RedHatBoyWrapper::Sliding(val) => val.frame,
-        }
-    }
-
-    fn position(&self) -> &Point {
-        match self {
-            RedHatBoyWrapper::Idle(val) => &val.position,
-            RedHatBoyWrapper::Running(val) => &val.position,
-            RedHatBoyWrapper::Jumping(val) => &val.position,
-            RedHatBoyWrapper::Sliding(val) => &val.position,
-        }
-    }
-
-    fn run(mut self) -> Self {
+    fn run(self) -> Self {
         match self {
             RedHatBoyWrapper::Idle(val) => RedHatBoyWrapper::Running(val.into()),
-            RedHatBoyWrapper::Running(mut val) => {
-                val.velocity.x += 4.0;
-                if val.velocity.x > 4.0 {
-                    val.velocity.x = 4.0;
-                }
-                RedHatBoyWrapper::Running(val)
-            }
-            RedHatBoyWrapper::Jumping(_) | RedHatBoyWrapper::Sliding(_) => self,
+            RedHatBoyWrapper::Running(val) => RedHatBoyWrapper::Running(val.go_right()),
+            _ => self,
         }
     }
 
-    fn jump(mut self) -> Self {
+    fn jump(self) -> Self {
         match self {
             RedHatBoyWrapper::Running(val) => RedHatBoyWrapper::Jumping(val.into()),
-            RedHatBoyWrapper::Idle(_)
-            | RedHatBoyWrapper::Jumping(_)
-            | RedHatBoyWrapper::Sliding(_) => self,
+            _ => self,
         }
     }
 
-    fn slide(mut self) -> Self {
+    fn slide(self) -> Self {
         match self {
             RedHatBoyWrapper::Running(val) => RedHatBoyWrapper::Sliding(val.into()),
-            RedHatBoyWrapper::Idle(_)
-            | RedHatBoyWrapper::Jumping(_)
-            | RedHatBoyWrapper::Sliding(_) => self,
+            _ => self,
         }
     }
 
-    fn moonwalk(mut self) -> Self {
+    fn moonwalk(self) -> Self {
         match self {
-            RedHatBoyWrapper::Running(mut val) => {
-                val.velocity.x -= 4.0;
-                // TODO Update Rust, use f32::clamp
-                if val.velocity.x < -4.0 {
-                    val.velocity.x = -4.0;
-                }
-                RedHatBoyWrapper::Running(val)
-            }
-            RedHatBoyWrapper::Idle(_)
-            | RedHatBoyWrapper::Jumping(_)
-            | RedHatBoyWrapper::Sliding(_) => self,
+            RedHatBoyWrapper::Running(val) => RedHatBoyWrapper::Running(val.go_left()),
+            _ => self,
         }
     }
 
-    fn update(mut self) -> Self {
+    fn update(self) -> Self {
         let frame_count = self.frame_count();
 
         match self {
             RedHatBoyWrapper::Jumping(mut val) => {
-                val.velocity.y += GRAVITY;
-                val.position.x += val.velocity.x as i16;
-                val.position.y = val.position.y + val.velocity.y as i16;
-                if val.frame < (frame_count * 3) - 1 {
-                    val.frame += 1;
-                } else {
-                    val.frame = 0;
-                }
+                val.object = val.object.apply_gravity().update(frame_count);
 
-                if val.position.y >= 478 {
+                if val.object.landed() {
                     RedHatBoyWrapper::Running(val.into())
                 } else {
                     RedHatBoyWrapper::Jumping(val)
                 }
             }
             RedHatBoyWrapper::Sliding(mut val) => {
-                val.position.x += val.velocity.x as i16;
-                val.position.y = val.position.y + val.velocity.y as i16;
-                if val.frame < (frame_count * 3) - 1 {
-                    val.frame += 1;
-                } else {
-                    val.frame = 0;
-                }
+                val.object = val.object.update(frame_count);
 
-                if val.frame >= (frame_count * 3) - 1 {
+                if val.object.animation_finished(frame_count) {
                     RedHatBoyWrapper::Running(val.into())
                 } else {
                     RedHatBoyWrapper::Sliding(val)
                 }
             }
             RedHatBoyWrapper::Idle(mut val) => {
-                val.position.x += val.velocity.x as i16;
-                val.position.y = val.position.y + val.velocity.y as i16;
-                if val.frame < (frame_count * 3) - 1 {
-                    val.frame += 1;
-                } else {
-                    val.frame = 0;
-                }
+                val.object = val.object.update(frame_count);
 
                 RedHatBoyWrapper::Idle(val)
             }
             RedHatBoyWrapper::Running(mut val) => {
-                val.position.x += val.velocity.x as i16;
-                val.position.y = val.position.y + val.velocity.y as i16;
-                if val.frame < (frame_count * 3) - 1 {
-                    val.frame += 1;
-                } else {
-                    val.frame = 0;
-                }
+                val.object = val.object.update(frame_count);
 
                 RedHatBoyWrapper::Running(val)
             }
@@ -275,6 +247,7 @@ pub struct WalkTheDog {
     background: Option<HtmlImageElement>,
     sprite: Option<SpriteSheet>,
     state_machine: RedHatBoyWrapper,
+    rhb: RedHatBoy,
 }
 
 impl WalkTheDog {
@@ -283,6 +256,7 @@ impl WalkTheDog {
             background: None,
             sprite: None,
             state_machine: RedHatBoyWrapper::Idle(RedHatBoyMachine::new()),
+            rhb: RedHatBoy::new(),
         }
     }
 }
@@ -312,29 +286,32 @@ impl Game for WalkTheDog {
     }
 
     fn update(&mut self, keystate: &KeyState) {
-        let frame_count = self.state_machine.frame_count();
-
         let mut machine = RedHatBoyWrapper::Idle(RedHatBoyMachine::new());
         swap(&mut machine, &mut self.state_machine);
 
         if keystate.is_pressed("ArrowRight") {
             machine = machine.run();
+            self.rhb.run();
         }
 
         if keystate.is_pressed("ArrowLeft") {
             machine = machine.moonwalk();
+            self.rhb.moonwalk();
         }
 
         if keystate.is_pressed("Space") {
             machine = machine.jump();
+            self.rhb.jump();
         }
 
         if keystate.is_pressed("ArrowDown") {
             machine = machine.slide();
+            self.rhb.slide();
         }
 
         machine = machine.update();
         self.state_machine = machine;
+        self.rhb.update();
     }
 
     fn draw(&self, renderer: &Renderer) {
@@ -347,14 +324,14 @@ impl Game for WalkTheDog {
 
         self.draw_background(renderer);
 
-        let animation = &self.state_machine.animation();
+        let animation = &self.rhb.animation();
 
         if let Some(sprite) = &self.sprite {
             sprite.draw(
                 renderer,
                 animation,
-                &(self.state_machine.frame() / 3).into(),
-                &self.state_machine.position(),
+                &(self.rhb.frame() / 3).into(),
+                &self.rhb.position(),
             );
         }
         /*
@@ -385,5 +362,130 @@ impl WalkTheDog {
                 },
             );
         }
+    }
+}
+
+struct GameObject {
+    frame: u8,
+    position: Point,
+    velocity: Vector,
+}
+
+impl GameObject {
+    fn go_left(mut self) -> GameObject {
+        self.velocity.x -= 4.0;
+        if self.velocity.x < -4.0 {
+            self.velocity.x = -4.0;
+        };
+        self
+    }
+
+    fn go_right(mut self) -> GameObject {
+        self.velocity.x += 4.0;
+        if self.velocity.x > 4.0 {
+            self.velocity.x = 4.0;
+        };
+        self
+    }
+
+    fn jump(self) -> GameObject {
+        let mut jumping = self.reset_frame();
+        jumping.velocity.y = -25.0;
+        jumping
+    }
+
+    fn apply_gravity(mut self) -> Self {
+        self.velocity.y += GRAVITY;
+        self
+    }
+
+    fn update(mut self, frame_count: u8) -> Self {
+        self.position.x += self.velocity.x as i16;
+        self.position.y = self.position.y + self.velocity.y as i16;
+        if self.frame < (frame_count * 3) - 1 {
+            self.frame += 1;
+        } else {
+            self.frame = 0;
+        };
+        self
+    }
+
+    fn landed(&self) -> bool {
+        self.position.y >= 485
+    }
+
+    fn land(self) -> Self {
+        let mut landed = self.reset_frame();
+        landed.velocity.y = 0.0;
+        landed.position.y = 485;
+        landed
+    }
+
+    fn reset_frame(mut self) -> Self {
+        self.frame = 0;
+        self
+    }
+
+    fn animation_finished(&self, frame_count: u8) -> bool {
+        self.frame >= (frame_count * 3) - 1
+    }
+}
+
+struct RedHatBoy {
+    state: RedHatBoyWrapper,
+}
+
+impl RedHatBoy {
+    fn new() -> Self {
+        RedHatBoy {
+            state: RedHatBoyWrapper::Idle(RedHatBoyMachine::new()),
+        }
+    }
+
+    fn animation(&self) -> &str {
+        self.state.animation()
+    }
+
+    fn frame(&self) -> u8 {
+        self.state.game_object().frame
+    }
+
+    fn position(&self) -> &Point {
+        &self.state.game_object().position
+    }
+
+    fn run(&mut self) {
+        let mut machine = RedHatBoyWrapper::Idle(RedHatBoyMachine::new());
+        swap(&mut machine, &mut self.state);
+
+        self.state = machine.run();
+    }
+
+    fn moonwalk(&mut self) {
+        let mut machine = RedHatBoyWrapper::Idle(RedHatBoyMachine::new());
+        swap(&mut machine, &mut self.state);
+
+        self.state = machine.moonwalk();
+    }
+
+    fn jump(&mut self) {
+        let mut machine = RedHatBoyWrapper::Idle(RedHatBoyMachine::new());
+        swap(&mut machine, &mut self.state);
+
+        self.state = machine.jump();
+    }
+
+    fn slide(&mut self) {
+        let mut machine = RedHatBoyWrapper::Idle(RedHatBoyMachine::new());
+        swap(&mut machine, &mut self.state);
+
+        self.state = machine.slide();
+    }
+
+    fn update(&mut self) {
+        let mut machine = RedHatBoyWrapper::Idle(RedHatBoyMachine::new());
+        swap(&mut machine, &mut self.state);
+
+        self.state = machine.update();
     }
 }
