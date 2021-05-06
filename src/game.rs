@@ -1,6 +1,5 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use std::mem::swap;
 use web_sys::HtmlImageElement;
 
 use crate::{
@@ -121,124 +120,128 @@ impl Game for WalkTheDog {
 }
 
 struct RedHatBoy {
-    state: RedHatBoyWrapper,
+    state: Option<RedHatBoyStateMachine>,
 }
 
 impl RedHatBoy {
     fn new() -> Self {
         RedHatBoy {
-            state: RedHatBoyWrapper::Idle(RedHatBoyMachine::new()),
+            state: Some(RedHatBoyStateMachine::Idle(RedHatBoyState::new())),
         }
     }
 
     fn animation(&self) -> &str {
-        self.state.animation()
+        self.state
+            .as_ref()
+            .map(|state| state.animation())
+            .unwrap_or("")
     }
 
     fn frame(&self) -> u8 {
-        self.state.game_object().frame
+        self.state
+            .as_ref()
+            .map(|state| state.game_object().frame)
+            .unwrap_or(0)
     }
 
     fn position(&self) -> &Point {
-        &self.state.game_object().position
+        self.state
+            .as_ref()
+            .map(|state| &state.game_object().position)
+            .unwrap_or(&Point { x: 0, y: 0 })
     }
 
     fn run(&mut self) {
-        let mut machine = RedHatBoyWrapper::Idle(RedHatBoyMachine::new());
-        swap(&mut machine, &mut self.state);
-
-        self.state = machine.run();
+        if let Some(state) = self.state.take() {
+            self.state.replace(state.run());
+        }
     }
 
     fn moonwalk(&mut self) {
-        let mut machine = RedHatBoyWrapper::Idle(RedHatBoyMachine::new());
-        swap(&mut machine, &mut self.state);
-
-        self.state = machine.moonwalk();
+        if let Some(state) = self.state.take() {
+            self.state.replace(state.moonwalk());
+        }
     }
 
     fn jump(&mut self) {
-        let mut machine = RedHatBoyWrapper::Idle(RedHatBoyMachine::new());
-        swap(&mut machine, &mut self.state);
-
-        self.state = machine.jump();
+        if let Some(state) = self.state.take() {
+            self.state.replace(state.jump());
+        }
     }
 
     fn slide(&mut self) {
-        let mut machine = RedHatBoyWrapper::Idle(RedHatBoyMachine::new());
-        swap(&mut machine, &mut self.state);
-
-        self.state = machine.slide();
+        if let Some(state) = self.state.take() {
+            self.state.replace(state.slide());
+        }
     }
 
     fn update(&mut self) {
-        let mut machine = RedHatBoyWrapper::Idle(RedHatBoyMachine::new());
-        swap(&mut machine, &mut self.state);
-
-        self.state = machine.update();
+        if let Some(state) = self.state.take() {
+            self.state.replace(state.update());
+        }
     }
 }
 
-enum RedHatBoyWrapper {
-    Idle(RedHatBoyMachine<Idle>),
-    Running(RedHatBoyMachine<Running>),
-    Jumping(RedHatBoyMachine<Jumping>),
-    Sliding(RedHatBoyMachine<Sliding>),
+enum RedHatBoyStateMachine {
+    Idle(RedHatBoyState<Idle>),
+    Running(RedHatBoyState<Running>),
+    Jumping(RedHatBoyState<Jumping>),
+    Sliding(RedHatBoyState<Sliding>),
 }
 
-impl RedHatBoyWrapper {
+impl RedHatBoyStateMachine {
     fn game_object(&self) -> &GameObject {
         match self {
-            RedHatBoyWrapper::Idle(val) => &val.object,
-            RedHatBoyWrapper::Running(val) => &val.object,
-            RedHatBoyWrapper::Jumping(val) => &val.object,
-            RedHatBoyWrapper::Sliding(val) => &val.object,
+            RedHatBoyStateMachine::Idle(val) => &val.object,
+            RedHatBoyStateMachine::Running(val) => &val.object,
+            RedHatBoyStateMachine::Jumping(val) => &val.object,
+            RedHatBoyStateMachine::Sliding(val) => &val.object,
         }
     }
 
     fn frame_count(&self) -> u8 {
         match self {
-            RedHatBoyWrapper::Idle(_) => 10,
-            RedHatBoyWrapper::Running(_) => 8,
-            RedHatBoyWrapper::Jumping(_) => 12,
-            RedHatBoyWrapper::Sliding(_) => 5,
+            RedHatBoyStateMachine::Idle(_) => 10,
+            RedHatBoyStateMachine::Running(_) => 8,
+            RedHatBoyStateMachine::Jumping(_) => 12,
+            RedHatBoyStateMachine::Sliding(_) => 5,
         }
     }
 
     fn animation(&self) -> &str {
         match self {
-            RedHatBoyWrapper::Idle(_) => "Idle",
-            RedHatBoyWrapper::Running(_) => "Run",
-            RedHatBoyWrapper::Jumping(_) => "Jump",
-            RedHatBoyWrapper::Sliding(_) => "Slide",
+            RedHatBoyStateMachine::Idle(_) => "Idle",
+            RedHatBoyStateMachine::Running(_) => "Run",
+            RedHatBoyStateMachine::Jumping(_) => "Jump",
+            RedHatBoyStateMachine::Sliding(_) => "Slide",
         }
     }
 
     fn run(self) -> Self {
         match self {
-            RedHatBoyWrapper::Idle(val) => RedHatBoyWrapper::Running(val.into()),
-            RedHatBoyWrapper::Running(val) => RedHatBoyWrapper::Running(val.go_right()),
+            RedHatBoyStateMachine::Idle(val) => RedHatBoyStateMachine::Running(val.into()),
+            RedHatBoyStateMachine::Running(val) => RedHatBoyStateMachine::Running(val.go_right()),
             _ => self,
         }
     }
 
     fn jump(self) -> Self {
         match self {
-            RedHatBoyWrapper::Running(val) => RedHatBoyWrapper::Jumping(val.into()),
+            RedHatBoyStateMachine::Running(val) => RedHatBoyStateMachine::Jumping(val.into()),
             _ => self,
         }
     }
 
     fn slide(self) -> Self {
         match self {
-            RedHatBoyWrapper::Running(val) => RedHatBoyWrapper::Sliding(val.into()),
+            RedHatBoyStateMachine::Running(val) => RedHatBoyStateMachine::Sliding(val.into()),
             _ => self,
         }
     }
 
     fn moonwalk(self) -> Self {
         match self {
-            RedHatBoyWrapper::Running(val) => RedHatBoyWrapper::Running(val.go_left()),
+            RedHatBoyStateMachine::Running(val) => RedHatBoyStateMachine::Running(val.go_left()),
             _ => self,
         }
     }
@@ -247,39 +250,39 @@ impl RedHatBoyWrapper {
         let frame_count = self.frame_count();
 
         match self {
-            RedHatBoyWrapper::Jumping(mut val) => {
+            RedHatBoyStateMachine::Jumping(mut val) => {
                 val.object = val.object.apply_gravity().update(frame_count);
 
                 if val.object.landed() {
-                    RedHatBoyWrapper::Running(val.into())
+                    RedHatBoyStateMachine::Running(val.into())
                 } else {
-                    RedHatBoyWrapper::Jumping(val)
+                    RedHatBoyStateMachine::Jumping(val)
                 }
             }
-            RedHatBoyWrapper::Sliding(mut val) => {
+            RedHatBoyStateMachine::Sliding(mut val) => {
                 val.object = val.object.update(frame_count);
 
                 if val.object.animation_finished(frame_count) {
-                    RedHatBoyWrapper::Running(val.into())
+                    RedHatBoyStateMachine::Running(val.into())
                 } else {
-                    RedHatBoyWrapper::Sliding(val)
+                    RedHatBoyStateMachine::Sliding(val)
                 }
             }
-            RedHatBoyWrapper::Idle(mut val) => {
+            RedHatBoyStateMachine::Idle(mut val) => {
                 val.object = val.object.update(frame_count);
 
-                RedHatBoyWrapper::Idle(val)
+                RedHatBoyStateMachine::Idle(val)
             }
-            RedHatBoyWrapper::Running(mut val) => {
+            RedHatBoyStateMachine::Running(mut val) => {
                 val.object = val.object.update(frame_count);
 
-                RedHatBoyWrapper::Running(val)
+                RedHatBoyStateMachine::Running(val)
             }
         }
     }
 }
 
-struct RedHatBoyMachine<S> {
+struct RedHatBoyState<S> {
     _state: S,
     object: GameObject,
 }
@@ -289,7 +292,7 @@ struct Jumping;
 struct Running;
 struct Sliding;
 
-impl RedHatBoyMachine<Idle> {
+impl RedHatBoyState<Idle> {
     fn new() -> Self {
         let game_object = GameObject {
             frame: 0,
@@ -297,23 +300,23 @@ impl RedHatBoyMachine<Idle> {
             velocity: Vector { x: 0.0, y: 0.0 },
         };
 
-        RedHatBoyMachine {
+        RedHatBoyState {
             _state: Idle {},
             object: game_object,
         }
     }
 }
 
-impl From<RedHatBoyMachine<Idle>> for RedHatBoyMachine<Running> {
-    fn from(machine: RedHatBoyMachine<Idle>) -> Self {
-        RedHatBoyMachine {
+impl From<RedHatBoyState<Idle>> for RedHatBoyState<Running> {
+    fn from(machine: RedHatBoyState<Idle>) -> Self {
+        RedHatBoyState {
             _state: Running {},
             object: machine.object.go_right(),
         }
     }
 }
 
-impl RedHatBoyMachine<Running> {
+impl RedHatBoyState<Running> {
     fn go_right(mut self) -> Self {
         self.object = self.object.go_right();
         self
@@ -325,36 +328,36 @@ impl RedHatBoyMachine<Running> {
     }
 }
 
-impl From<RedHatBoyMachine<Running>> for RedHatBoyMachine<Sliding> {
-    fn from(machine: RedHatBoyMachine<Running>) -> Self {
-        RedHatBoyMachine {
+impl From<RedHatBoyState<Running>> for RedHatBoyState<Sliding> {
+    fn from(machine: RedHatBoyState<Running>) -> Self {
+        RedHatBoyState {
             _state: Sliding {},
             object: machine.object.reset_frame(),
         }
     }
 }
 
-impl From<RedHatBoyMachine<Running>> for RedHatBoyMachine<Jumping> {
-    fn from(machine: RedHatBoyMachine<Running>) -> Self {
-        RedHatBoyMachine {
+impl From<RedHatBoyState<Running>> for RedHatBoyState<Jumping> {
+    fn from(machine: RedHatBoyState<Running>) -> Self {
+        RedHatBoyState {
             _state: Jumping {},
             object: machine.object.jump(),
         }
     }
 }
 
-impl From<RedHatBoyMachine<Jumping>> for RedHatBoyMachine<Running> {
-    fn from(machine: RedHatBoyMachine<Jumping>) -> Self {
-        RedHatBoyMachine {
+impl From<RedHatBoyState<Jumping>> for RedHatBoyState<Running> {
+    fn from(machine: RedHatBoyState<Jumping>) -> Self {
+        RedHatBoyState {
             _state: Running {},
             object: machine.object.land(),
         }
     }
 }
 
-impl From<RedHatBoyMachine<Sliding>> for RedHatBoyMachine<Running> {
-    fn from(machine: RedHatBoyMachine<Sliding>) -> Self {
-        RedHatBoyMachine {
+impl From<RedHatBoyState<Sliding>> for RedHatBoyState<Running> {
+    fn from(machine: RedHatBoyState<Sliding>) -> Self {
+        RedHatBoyState {
             _state: Running {},
             object: machine.object.reset_frame(),
         }
