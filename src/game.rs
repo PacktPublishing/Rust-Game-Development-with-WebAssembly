@@ -32,9 +32,6 @@ pub struct Sheet {
 const GRAVITY: f32 = 1.5;
 
 struct RedHatBoyMachine<S> {
-    frame: u8,
-    velocity: Vector,
-    position: Point,
     state: S,
     object: GameObject,
 }
@@ -53,9 +50,6 @@ impl RedHatBoyMachine<Idle> {
         };
 
         RedHatBoyMachine {
-            frame: 0,
-            velocity: Vector { x: 0.0, y: 0.0 },
-            position: Point { x: 0, y: 485 },
             state: Idle {},
             object: game_object,
         }
@@ -65,9 +59,6 @@ impl RedHatBoyMachine<Idle> {
 impl From<RedHatBoyMachine<Idle>> for RedHatBoyMachine<Running> {
     fn from(machine: RedHatBoyMachine<Idle>) -> Self {
         RedHatBoyMachine {
-            frame: 0,
-            position: machine.position,
-            velocity: Vector { x: 4.0, y: 0.0 },
             state: Running {},
             object: machine.object.go_right(),
         }
@@ -89,9 +80,6 @@ impl RedHatBoyMachine<Running> {
 impl From<RedHatBoyMachine<Running>> for RedHatBoyMachine<Sliding> {
     fn from(machine: RedHatBoyMachine<Running>) -> Self {
         RedHatBoyMachine {
-            frame: 0,
-            position: machine.position,
-            velocity: machine.velocity,
             state: Sliding {},
             object: machine.object.reset_frame(),
         }
@@ -101,12 +89,6 @@ impl From<RedHatBoyMachine<Running>> for RedHatBoyMachine<Sliding> {
 impl From<RedHatBoyMachine<Running>> for RedHatBoyMachine<Jumping> {
     fn from(machine: RedHatBoyMachine<Running>) -> Self {
         RedHatBoyMachine {
-            frame: 0,
-            position: machine.position,
-            velocity: Vector {
-                x: machine.velocity.x,
-                y: -25.0,
-            },
             state: Jumping {},
             object: machine.object.jump(),
         }
@@ -116,12 +98,6 @@ impl From<RedHatBoyMachine<Running>> for RedHatBoyMachine<Jumping> {
 impl From<RedHatBoyMachine<Jumping>> for RedHatBoyMachine<Running> {
     fn from(machine: RedHatBoyMachine<Jumping>) -> Self {
         RedHatBoyMachine {
-            frame: 0,
-            position: machine.position,
-            velocity: Vector {
-                x: machine.velocity.x,
-                y: 0.0,
-            },
             state: Running {},
             object: machine.object.land(),
         }
@@ -131,12 +107,6 @@ impl From<RedHatBoyMachine<Jumping>> for RedHatBoyMachine<Running> {
 impl From<RedHatBoyMachine<Sliding>> for RedHatBoyMachine<Running> {
     fn from(machine: RedHatBoyMachine<Sliding>) -> Self {
         RedHatBoyMachine {
-            frame: 0,
-            position: machine.position,
-            velocity: Vector {
-                x: machine.velocity.x,
-                y: 0.0,
-            },
             state: Running {},
             object: machine.object.reset_frame(),
         }
@@ -246,7 +216,6 @@ impl RedHatBoyWrapper {
 pub struct WalkTheDog {
     background: Option<HtmlImageElement>,
     sprite: Option<SpriteSheet>,
-    state_machine: RedHatBoyWrapper,
     rhb: RedHatBoy,
 }
 
@@ -255,7 +224,6 @@ impl WalkTheDog {
         WalkTheDog {
             background: None,
             sprite: None,
-            state_machine: RedHatBoyWrapper::Idle(RedHatBoyMachine::new()),
             rhb: RedHatBoy::new(),
         }
     }
@@ -286,31 +254,22 @@ impl Game for WalkTheDog {
     }
 
     fn update(&mut self, keystate: &KeyState) {
-        let mut machine = RedHatBoyWrapper::Idle(RedHatBoyMachine::new());
-        swap(&mut machine, &mut self.state_machine);
-
         if keystate.is_pressed("ArrowRight") {
-            machine = machine.run();
             self.rhb.run();
         }
 
         if keystate.is_pressed("ArrowLeft") {
-            machine = machine.moonwalk();
             self.rhb.moonwalk();
         }
 
         if keystate.is_pressed("Space") {
-            machine = machine.jump();
             self.rhb.jump();
         }
 
         if keystate.is_pressed("ArrowDown") {
-            machine = machine.slide();
             self.rhb.slide();
         }
 
-        machine = machine.update();
-        self.state_machine = machine;
         self.rhb.update();
     }
 
