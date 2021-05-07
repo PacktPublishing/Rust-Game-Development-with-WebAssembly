@@ -110,12 +110,6 @@ impl Game for WalkTheDog {
                 &self.rhb.position(),
             );
         }
-        /*
-        let additional_offset_y = match self.state {
-            RedHatBoy::Sliding => 15,
-            _ => 0,
-        };
-        */
     }
 }
 
@@ -332,7 +326,7 @@ impl From<RedHatBoyState<Running>> for RedHatBoyState<Sliding> {
     fn from(machine: RedHatBoyState<Running>) -> Self {
         RedHatBoyState {
             _state: Sliding {},
-            object: machine.object.reset_frame(),
+            object: machine.object.reset_frame().slide(),
         }
     }
 }
@@ -341,7 +335,7 @@ impl From<RedHatBoyState<Running>> for RedHatBoyState<Jumping> {
     fn from(machine: RedHatBoyState<Running>) -> Self {
         RedHatBoyState {
             _state: Jumping {},
-            object: machine.object.jump(),
+            object: machine.object.reset_frame().jump(),
         }
     }
 }
@@ -350,7 +344,7 @@ impl From<RedHatBoyState<Jumping>> for RedHatBoyState<Running> {
     fn from(machine: RedHatBoyState<Jumping>) -> Self {
         RedHatBoyState {
             _state: Running {},
-            object: machine.object.land(),
+            object: machine.object.reset_frame().land(),
         }
     }
 }
@@ -359,7 +353,7 @@ impl From<RedHatBoyState<Sliding>> for RedHatBoyState<Running> {
     fn from(machine: RedHatBoyState<Sliding>) -> Self {
         RedHatBoyState {
             _state: Running {},
-            object: machine.object.reset_frame(),
+            object: machine.object.reset_frame().stand_up(),
         }
     }
 }
@@ -387,10 +381,9 @@ impl GameObject {
         self
     }
 
-    fn jump(self) -> GameObject {
-        let mut jumping = self.reset_frame();
-        jumping.velocity.y = -25.0;
-        jumping
+    fn jump(mut self) -> Self {
+        self.velocity.y = -25.0;
+        self
     }
 
     fn apply_gravity(mut self) -> Self {
@@ -413,11 +406,20 @@ impl GameObject {
         self.position.y >= FLOOR
     }
 
-    fn land(self) -> Self {
-        let mut landed = self.reset_frame();
-        landed.velocity.y = 0.0;
-        landed.position.y = FLOOR;
-        landed
+    fn land(mut self) -> Self {
+        self.velocity.y = 0.0;
+        self.position.y = FLOOR;
+        self
+    }
+
+    fn slide(mut self) -> Self {
+        self.position.y += 15;
+        self
+    }
+
+    fn stand_up(mut self) -> Self {
+        self.position.y -= 15;
+        self
     }
 
     fn reset_frame(mut self) -> Self {
