@@ -22,11 +22,21 @@ pub struct Vector {
     pub y: f32,
 }
 
+#[derive(Debug)]
 pub struct Rect {
     pub x: f32,
     pub y: f32,
     pub width: f32,
     pub height: f32,
+}
+
+impl Rect {
+    pub fn intersects(&self, rect: &Rect) -> bool {
+        self.x < (rect.x + rect.width)
+            && self.x + self.height > rect.x
+            && self.y < (rect.y + rect.height)
+            && self.y + self.height > rect.y
+    }
 }
 
 #[derive(Deserialize)]
@@ -52,7 +62,6 @@ pub struct Sheet {
 pub struct SpriteSheet {
     image: HtmlImageElement,
     sheet: Sheet,
-    animations: Vec<String>,
     adjustments: HashMap<String, Vec<Point>>,
 }
 
@@ -84,7 +93,6 @@ impl SpriteSheet {
         SpriteSheet {
             image,
             sheet,
-            animations,
             adjustments,
         }
     }

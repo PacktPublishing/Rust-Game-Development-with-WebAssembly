@@ -12,6 +12,7 @@ const FLOOR: i16 = 485;
 
 pub struct WalkTheDog {
     background: Option<HtmlImageElement>,
+    rock: Option<HtmlImageElement>,
     sprite: Option<SpriteSheet>,
     rhb: RedHatBoy,
 }
@@ -20,8 +21,29 @@ impl WalkTheDog {
     pub fn new() -> Self {
         WalkTheDog {
             background: None,
+            rock: None,
             sprite: None,
             rhb: RedHatBoy::new(),
+        }
+    }
+
+    fn draw_rock(&self, renderer: &Renderer) {
+        if let Some(rock) = &self.rock {
+            renderer.draw_image(
+                &rock,
+                &Rect {
+                    x: 0.0,
+                    y: 0.0,
+                    width: 90.0,
+                    height: 54.0,
+                },
+                &Rect {
+                    x: 200.0,
+                    y: 546.0,
+                    width: 90.0,
+                    height: 54.0,
+                },
+            );
         }
     }
 
@@ -55,6 +77,7 @@ impl Game for WalkTheDog {
         let image = engine::load_image("rhb.png").await?;
 
         self.background = Some(engine::load_image("BG.png").await?);
+        self.rock = Some(engine::load_image("Stone.png").await?);
 
         self.sprite = Some(SpriteSheet::new(
             image,
@@ -88,6 +111,17 @@ impl Game for WalkTheDog {
         }
 
         self.rhb.update();
+
+        // Collisions
+        if self.rhb.collides_with(&Rect {
+            x: 200.0,
+            y: 546.0,
+            width: 90.0,
+            height: 54.0,
+        }) {
+            log!("COLLISION!!!!!");
+            self.rhb.kill();
+        }
     }
 
     fn draw(&self, renderer: &Renderer) {
@@ -99,6 +133,7 @@ impl Game for WalkTheDog {
         });
 
         self.draw_background(renderer);
+        self.draw_rock(renderer);
 
         let animation = &self.rhb.animation();
 
@@ -122,6 +157,17 @@ impl RedHatBoy {
         RedHatBoy {
             state: Some(RedHatBoyStateMachine::Idle(RedHatBoyState::new())),
         }
+    }
+
+    fn collides_with(&self, rect: &Rect) -> bool {
+        let bounding_box = Rect {
+            x: self.position().x.into(),
+            y: self.position().y.into(),
+            width: 160.0,
+            height: 136.0,
+        };
+        log!("boy: {:#?} rock {:#?}", bounding_box, rect);
+        bounding_box.intersects(rect)
     }
 
     fn animation(&self) -> &str {
@@ -148,6 +194,12 @@ impl RedHatBoy {
     fn run(&mut self) {
         if let Some(state) = self.state.take() {
             self.state.replace(state.run());
+        }
+    }
+
+    fn kill(&mut self) {
+        if let Some(state) = self.state.take() {
+            self.state.replace(state.kill());
         }
     }
 
@@ -181,6 +233,7 @@ enum RedHatBoyStateMachine {
     Running(RedHatBoyState<Running>),
     Jumping(RedHatBoyState<Jumping>),
     Sliding(RedHatBoyState<Sliding>),
+    Dead(RedHatBoyState<Dead>),
 }
 
 impl RedHatBoyStateMachine {
@@ -190,6 +243,7 @@ impl RedHatBoyStateMachine {
             RedHatBoyStateMachine::Running(val) => &val.object,
             RedHatBoyStateMachine::Jumping(val) => &val.object,
             RedHatBoyStateMachine::Sliding(val) => &val.object,
+            RedHatBoyStateMachine::Dead(val) => &val.object,
         }
     }
 
@@ -199,6 +253,7 @@ impl RedHatBoyStateMachine {
             RedHatBoyStateMachine::Running(_) => 8,
             RedHatBoyStateMachine::Jumping(_) => 12,
             RedHatBoyStateMachine::Sliding(_) => 5,
+            RedHatBoyStateMachine::Dead(_) => 10,
         }
     }
 
@@ -208,6 +263,7 @@ impl RedHatBoyStateMachine {
             RedHatBoyStateMachine::Running(_) => "Run",
             RedHatBoyStateMachine::Jumping(_) => "Jump",
             RedHatBoyStateMachine::Sliding(_) => "Slide",
+            RedHatBoyStateMachine::Dead(_) => "Dead",
         }
     }
 
@@ -236,6 +292,13 @@ impl RedHatBoyStateMachine {
     fn moonwalk(self) -> Self {
         match self {
             RedHatBoyStateMachine::Running(val) => RedHatBoyStateMachine::Running(val.go_left()),
+            _ => self,
+        }
+    }
+
+    fn kill(self) -> Self {
+        match self {
+            RedHatBoyStateMachine::Running(val) => RedHatBoyStateMachine::Dead(val.into()),
             _ => self,
         }
     }
@@ -272,6 +335,11 @@ impl RedHatBoyStateMachine {
 
                 RedHatBoyStateMachine::Running(val)
             }
+            RedHatBoyStateMachine::Dead(mut val) => {
+                val.object = val.object.update(frame_count);
+
+                RedHatBoyStateMachine::Dead(val)
+            }
         }
     }
 }
@@ -285,6 +353,7 @@ struct Idle;
 struct Jumping;
 struct Running;
 struct Sliding;
+struct Dead;
 
 impl RedHatBoyState<Idle> {
     fn new() -> Self {
@@ -336,6 +405,15 @@ impl From<RedHatBoyState<Running>> for RedHatBoyState<Jumping> {
         RedHatBoyState {
             _state: Jumping {},
             object: machine.object.reset_frame().jump(),
+        }
+    }
+}
+
+impl From<RedHatBoyState<Running>> for RedHatBoyState<Dead> {
+    fn from(machine: RedHatBoyState<Running>) -> Self {
+        RedHatBoyState {
+            _state: Dead {},
+            object: machine.object.reset_frame().kill(),
         }
     }
 }
@@ -424,6 +502,11 @@ impl GameObject {
 
     fn reset_frame(mut self) -> Self {
         self.frame = 0;
+        self
+    }
+
+    fn kill(mut self) -> Self {
+        self.velocity = Vector { x: 0.0, y: 0.0 };
         self
     }
 
