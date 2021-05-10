@@ -175,6 +175,18 @@ impl Renderer {
             )
             .expect("Drawing is throwing exceptions! Unrecoverable error.");
     }
+
+    pub fn draw_rect(&self, color: &str, rect: &Rect) {
+        self.context.set_stroke_style(&JsValue::from_str(color));
+        self.context.begin_path();
+        self.context.rect(
+            rect.x.into(),
+            rect.y.into(),
+            rect.width.into(),
+            rect.height.into(),
+        );
+        self.context.stroke();
+    }
 }
 
 pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
