@@ -119,7 +119,6 @@ impl Game for WalkTheDog {
             width: 90.0,
             height: 54.0,
         }) {
-            log!("COLLISION!!!!!");
             self.rhb.kill();
         }
     }
@@ -166,7 +165,6 @@ impl RedHatBoy {
             width: 160.0,
             height: 136.0,
         };
-        log!("boy: {:#?} rock {:#?}", bounding_box, rect);
         bounding_box.intersects(rect)
     }
 
@@ -234,6 +232,7 @@ enum RedHatBoyStateMachine {
     Jumping(RedHatBoyState<Jumping>),
     Sliding(RedHatBoyState<Sliding>),
     Dead(RedHatBoyState<Dead>),
+    GameOver(RedHatBoyState<GameOver>),
 }
 
 impl RedHatBoyStateMachine {
@@ -244,6 +243,7 @@ impl RedHatBoyStateMachine {
             RedHatBoyStateMachine::Jumping(val) => &val.object,
             RedHatBoyStateMachine::Sliding(val) => &val.object,
             RedHatBoyStateMachine::Dead(val) => &val.object,
+            RedHatBoyStateMachine::GameOver(val) => &val.object,
         }
     }
 
@@ -254,6 +254,7 @@ impl RedHatBoyStateMachine {
             RedHatBoyStateMachine::Jumping(_) => 12,
             RedHatBoyStateMachine::Sliding(_) => 5,
             RedHatBoyStateMachine::Dead(_) => 10,
+            RedHatBoyStateMachine::GameOver(_) => 29,
         }
     }
 
@@ -264,6 +265,7 @@ impl RedHatBoyStateMachine {
             RedHatBoyStateMachine::Jumping(_) => "Jump",
             RedHatBoyStateMachine::Sliding(_) => "Slide",
             RedHatBoyStateMachine::Dead(_) => "Dead",
+            RedHatBoyStateMachine::GameOver(_) => "Dead",
         }
     }
 
@@ -338,7 +340,16 @@ impl RedHatBoyStateMachine {
             RedHatBoyStateMachine::Dead(mut val) => {
                 val.object = val.object.update(frame_count);
 
-                RedHatBoyStateMachine::Dead(val)
+                if val.object.animation_finished(frame_count) {
+                    RedHatBoyStateMachine::GameOver(val.into())
+                } else {
+                    RedHatBoyStateMachine::Dead(val)
+                }
+            }
+            RedHatBoyStateMachine::GameOver(mut val) => {
+                val.object.frame = frame_count;
+
+                RedHatBoyStateMachine::GameOver(val)
             }
         }
     }
@@ -354,6 +365,7 @@ struct Jumping;
 struct Running;
 struct Sliding;
 struct Dead;
+struct GameOver;
 
 impl RedHatBoyState<Idle> {
     fn new() -> Self {
@@ -436,6 +448,16 @@ impl From<RedHatBoyState<Sliding>> for RedHatBoyState<Running> {
     }
 }
 
+impl From<RedHatBoyState<Dead>> for RedHatBoyState<GameOver> {
+    fn from(machine: RedHatBoyState<Dead>) -> Self {
+        RedHatBoyState {
+            _state: GameOver {},
+            object: machine.object,
+        }
+    }
+}
+
+#[derive(Debug)]
 struct GameObject {
     frame: u8,
     position: Point,
