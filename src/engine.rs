@@ -38,7 +38,7 @@ pub struct Rect {
 impl Rect {
     pub fn intersects(&self, rect: &Rect) -> bool {
         self.x < (rect.x + rect.width)
-            && self.x + self.height > rect.x
+            && self.x + self.width > rect.x
             && self.y < (rect.y + rect.height)
             && self.y + self.height > rect.y
     }
