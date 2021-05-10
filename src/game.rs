@@ -1,6 +1,5 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use wasm_bindgen::JsValue;
 use web_sys::HtmlImageElement;
 
 use crate::{
@@ -88,6 +87,7 @@ impl Game for WalkTheDog {
                 "Run".to_string(),
                 "Jump".to_string(),
                 "Slide".to_string(),
+                "Dead".to_string(),
             ],
         ));
 
@@ -178,6 +178,7 @@ impl RedHatBoy {
     }
 
     fn bounding_box(&self, sheet: &SpriteSheet) -> Rect {
+        log!("animation: {}", self.animation());
         Rect {
             x: self.position().x.into(),
             y: self.position().y.into(),
