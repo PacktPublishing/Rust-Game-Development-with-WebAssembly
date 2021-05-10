@@ -8,7 +8,7 @@ use crate::{
     engine::{self, Game, KeyState, Point, Rect, Renderer, SpriteSheet, Vector},
 };
 
-const GRAVITY: f32 = 1.5;
+const GRAVITY: f32 = 1.0;
 const FLOOR: i16 = 485;
 
 pub struct WalkTheDog {
