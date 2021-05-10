@@ -97,7 +97,7 @@ impl SpriteSheet {
                     adjustments_vec.push(adjustment);
                     dimensions_vec.push(Dimen {
                         width: frame.sprite_source_size.w.into(),
-                        height: frame.sprite_source_size.x.into(),
+                        height: frame.sprite_source_size.h.into(),
                     });
                     frame_index += 1;
                 }
