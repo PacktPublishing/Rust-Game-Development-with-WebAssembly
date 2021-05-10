@@ -113,12 +113,15 @@ impl Game for WalkTheDog {
         self.rhb.update();
 
         // Collisions
-        if self.rhb.collides_with(&Rect {
-            x: 200.0,
-            y: 546.0,
-            width: 90.0,
-            height: 54.0,
-        }) {
+        if self.rhb.collides_with(
+            &self.sprite.as_ref().unwrap(),
+            &Rect {
+                x: 200.0,
+                y: 546.0,
+                width: 90.0,
+                height: 54.0,
+            },
+        ) {
             self.rhb.kill();
         }
     }
@@ -158,12 +161,12 @@ impl RedHatBoy {
         }
     }
 
-    fn collides_with(&self, rect: &Rect) -> bool {
+    fn collides_with(&self, sheet: &SpriteSheet, rect: &Rect) -> bool {
         let bounding_box = Rect {
             x: self.position().x.into(),
             y: self.position().y.into(),
-            width: 160.0,
-            height: 136.0,
+            width: sheet.dimensions[self.animation()][(self.frame() / 3) as usize].width,
+            height: sheet.dimensions[self.animation()][(self.frame() / 3) as usize].height,
         };
         bounding_box.intersects(rect)
     }

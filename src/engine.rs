@@ -22,6 +22,11 @@ pub struct Vector {
     pub y: f32,
 }
 
+pub struct Dimen {
+    pub width: f32,
+    pub height: f32,
+}
+
 #[derive(Debug)]
 pub struct Rect {
     pub x: f32,
@@ -63,14 +68,20 @@ pub struct SpriteSheet {
     image: HtmlImageElement,
     sheet: Sheet,
     adjustments: HashMap<String, Vec<Point>>,
+    pub dimensions: HashMap<String, Vec<Dimen>>,
 }
 
 impl SpriteSheet {
     pub fn new(image: HtmlImageElement, sheet: Sheet, animations: Vec<String>) -> Self {
         let mut adjustments = HashMap::new();
+        let mut dimensions = HashMap::new();
         animations.iter().for_each(|animation| {
             if let Some(first_frame) = sheet.frames.get(&format!("{} (1).png", animation)) {
                 let mut adjustments_vec = vec![Point { x: 0, y: 0 }];
+                let mut dimensions_vec = vec![Dimen {
+                    width: first_frame.sprite_source_size.w.into(),
+                    height: first_frame.sprite_source_size.h.into(),
+                }];
 
                 let mut frame_index = 2;
                 while let Some(frame) = sheet
@@ -84,9 +95,14 @@ impl SpriteSheet {
                             - first_frame.sprite_source_size.y as i16,
                     };
                     adjustments_vec.push(adjustment);
+                    dimensions_vec.push(Dimen {
+                        width: frame.sprite_source_size.w.into(),
+                        height: frame.sprite_source_size.x.into(),
+                    });
                     frame_index += 1;
                 }
                 adjustments.insert(animation.into(), adjustments_vec);
+                dimensions.insert(animation.into(), dimensions_vec);
             }
         });
 
@@ -94,6 +110,7 @@ impl SpriteSheet {
             image,
             sheet,
             adjustments,
+            dimensions,
         }
     }
 
