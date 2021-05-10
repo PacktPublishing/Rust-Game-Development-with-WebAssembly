@@ -123,6 +123,7 @@ impl Game for WalkTheDog {
                 height: 54.0,
             },
         ) {
+            log!("COLLISION!");
             self.rhb.kill();
         }
     }
@@ -177,11 +178,6 @@ impl RedHatBoy {
     }
 
     fn bounding_box(&self, sheet: &SpriteSheet) -> Rect {
-        log!(
-            "animation {} height: {}",
-            self.animation(),
-            sheet.dimensions[self.animation()][(self.frame() / 3) as usize].height
-        );
         Rect {
             x: self.position().x.into(),
             y: self.position().y.into(),
