@@ -1,5 +1,6 @@
 use anyhow::Result;
 use async_trait::async_trait;
+use wasm_bindgen::JsValue;
 use web_sys::HtmlImageElement;
 
 use crate::{
@@ -137,6 +138,16 @@ impl Game for WalkTheDog {
         self.draw_background(renderer);
         self.draw_rock(renderer);
 
+        renderer.draw_rect(
+            "#FF0000",
+            &Rect {
+                x: 200.0,
+                y: 546.0,
+                width: 90.0,
+                height: 54.0,
+            },
+        );
+
         let animation = &self.rhb.animation();
 
         if let Some(sprite) = &self.sprite {
@@ -147,6 +158,10 @@ impl Game for WalkTheDog {
                 &self.rhb.position(),
             );
         }
+        renderer.draw_rect(
+            "#FF0000",
+            &self.rhb.bounding_box(&self.sprite.as_ref().unwrap()),
+        );
     }
 }
 
@@ -161,14 +176,22 @@ impl RedHatBoy {
         }
     }
 
-    fn collides_with(&self, sheet: &SpriteSheet, rect: &Rect) -> bool {
-        let bounding_box = Rect {
+    fn bounding_box(&self, sheet: &SpriteSheet) -> Rect {
+        log!(
+            "animation {} height: {}",
+            self.animation(),
+            sheet.dimensions[self.animation()][(self.frame() / 3) as usize].height
+        );
+        Rect {
             x: self.position().x.into(),
             y: self.position().y.into(),
             width: sheet.dimensions[self.animation()][(self.frame() / 3) as usize].width,
             height: sheet.dimensions[self.animation()][(self.frame() / 3) as usize].height,
-        };
-        bounding_box.intersects(rect)
+        }
+    }
+
+    fn collides_with(&self, sheet: &SpriteSheet, rect: &Rect) -> bool {
+        self.bounding_box(sheet).intersects(rect)
     }
 
     fn animation(&self) -> &str {
