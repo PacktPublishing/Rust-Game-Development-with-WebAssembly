@@ -64,9 +64,14 @@ pub struct Sheet {
     frames: HashMap<String, Cell>,
 }
 
+pub struct Slice {
+    pub bounding_box: Rect,
+}
+
 pub struct SpriteSheet {
     image: HtmlImageElement,
     sheet: Sheet,
+    pub slices: HashMap<String, Slice>,
     adjustments: HashMap<String, Vec<Point>>,
     pub dimensions: HashMap<String, Vec<Dimen>>,
 }
@@ -75,19 +80,30 @@ impl SpriteSheet {
     pub fn new(image: HtmlImageElement, sheet: Sheet, animations: Vec<String>) -> Self {
         let mut adjustments = HashMap::new();
         let mut dimensions = HashMap::new();
+        let mut slices = HashMap::new();
         animations.iter().for_each(|animation| {
-            if let Some(first_frame) = sheet.frames.get(&format!("{} (1).png", animation)) {
+            let name = format!("{} (1).png", animation);
+            if let Some(first_frame) = sheet.frames.get(&name) {
                 let mut adjustments_vec = vec![Point { x: 0, y: 0 }];
                 let mut dimensions_vec = vec![Dimen {
                     width: first_frame.sprite_source_size.w.into(),
                     height: first_frame.sprite_source_size.h.into(),
                 }];
+                slices.insert(
+                    name,
+                    Slice {
+                        bounding_box: Rect {
+                            x: 0.0,
+                            y: 0.0,
+                            width: first_frame.sprite_source_size.w.into(),
+                            height: first_frame.sprite_source_size.h.into(),
+                        },
+                    },
+                );
 
                 let mut frame_index = 2;
-                while let Some(frame) = sheet
-                    .frames
-                    .get(&format!("{} ({}).png", animation, frame_index))
-                {
+                let mut next_frame = format!("{} ({}).png", animation, frame_index);
+                while let Some(frame) = sheet.frames.get(&next_frame) {
                     let adjustment = Point {
                         x: frame.sprite_source_size.x as i16
                             - first_frame.sprite_source_size.x as i16,
@@ -99,18 +115,35 @@ impl SpriteSheet {
                         width: frame.sprite_source_size.w.into(),
                         height: frame.sprite_source_size.h.into(),
                     });
+                    slices.insert(
+                        next_frame.clone(),
+                        Slice {
+                            bounding_box: Rect {
+                                x: frame.sprite_source_size.x as f32
+                                    - first_frame.sprite_source_size.x as f32,
+                                y: frame.sprite_source_size.y as f32
+                                    - first_frame.sprite_source_size.y as f32,
+                                width: first_frame.sprite_source_size.w.into(),
+                                height: first_frame.sprite_source_size.h.into(),
+                            },
+                        },
+                    );
+
                     frame_index += 1;
+                    next_frame = format!("{} ({}).png", animation, frame_index);
                 }
                 adjustments.insert(animation.into(), adjustments_vec);
                 dimensions.insert(animation.into(), dimensions_vec);
             }
         });
 
+        log!("Slice keys {:#?}", slices.keys());
         SpriteSheet {
             image,
             sheet,
             adjustments,
             dimensions,
+            slices,
         }
     }
 
@@ -122,11 +155,14 @@ impl SpriteSheet {
             .get(&cell)
             .expect(&format!("Cell {} not found", cell));
 
-        let adjustment = self
-            .adjustments
-            .get(animation)
-            .and_then(|adjustments| adjustments.get(*frame as usize))
-            .unwrap_or(&Point { x: 0, y: 0 });
+        let slice = self.slices.get(&cell).unwrap_or(&Slice {
+            bounding_box: Rect {
+                x: 0.0,
+                y: 0.0,
+                width: 0.0,
+                height: 0.0,
+            },
+        });
 
         renderer.draw_image(
             &self.image,
@@ -137,8 +173,8 @@ impl SpriteSheet {
                 height: sprite.frame.h.into(),
             },
             &Rect {
-                x: (position.x as i16 + adjustment.x).into(),
-                y: (position.y as i16 + adjustment.y).into(),
+                x: (position.x as f32 + slice.bounding_box.x).into(),
+                y: (position.y as f32 + slice.bounding_box.y).into(),
                 width: sprite.frame.w.into(),
                 height: sprite.frame.h.into(),
             },

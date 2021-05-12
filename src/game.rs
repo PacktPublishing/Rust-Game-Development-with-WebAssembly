@@ -178,12 +178,13 @@ impl RedHatBoy {
     }
 
     fn bounding_box(&self, sheet: &SpriteSheet) -> Rect {
-        log!("animation: {}", self.animation());
+        let frame = format!("{} ({}).png", self.animation(), (self.frame() / 3) + 1);
+        let bounding_box = &sheet.slices[&frame].bounding_box;
         Rect {
-            x: self.position().x.into(),
-            y: self.position().y.into(),
-            width: sheet.dimensions[self.animation()][(self.frame() / 3) as usize].width,
-            height: sheet.dimensions[self.animation()][(self.frame() / 3) as usize].height,
+            x: self.position().x as f32 + bounding_box.x,
+            y: self.position().y as f32 + bounding_box.y,
+            width: bounding_box.width,
+            height: bounding_box.height,
         }
     }
 
