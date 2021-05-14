@@ -254,7 +254,7 @@ enum RedHatBoyStateMachine {
     Running(RedHatBoyState<Running>),
     Jumping(RedHatBoyState<Jumping>),
     Sliding(RedHatBoyState<Sliding>),
-    Dead(RedHatBoyState<Dead>),
+    Crashing(RedHatBoyState<Crashing>),
     GameOver(RedHatBoyState<GameOver>),
 }
 
@@ -265,7 +265,7 @@ impl RedHatBoyStateMachine {
             RedHatBoyStateMachine::Running(val) => &val.object,
             RedHatBoyStateMachine::Jumping(val) => &val.object,
             RedHatBoyStateMachine::Sliding(val) => &val.object,
-            RedHatBoyStateMachine::Dead(val) => &val.object,
+            RedHatBoyStateMachine::Crashing(val) => &val.object,
             RedHatBoyStateMachine::GameOver(val) => &val.object,
         }
     }
@@ -276,7 +276,7 @@ impl RedHatBoyStateMachine {
             RedHatBoyStateMachine::Running(_) => 8,
             RedHatBoyStateMachine::Jumping(_) => 12,
             RedHatBoyStateMachine::Sliding(_) => 5,
-            RedHatBoyStateMachine::Dead(_) => 10,
+            RedHatBoyStateMachine::Crashing(_) => 10,
             RedHatBoyStateMachine::GameOver(_) => 29,
         }
     }
@@ -287,7 +287,7 @@ impl RedHatBoyStateMachine {
             RedHatBoyStateMachine::Running(_) => "Run",
             RedHatBoyStateMachine::Jumping(_) => "Jump",
             RedHatBoyStateMachine::Sliding(_) => "Slide",
-            RedHatBoyStateMachine::Dead(_) => "Dead",
+            RedHatBoyStateMachine::Crashing(_) => "Dead",
             RedHatBoyStateMachine::GameOver(_) => "Dead",
         }
     }
@@ -323,7 +323,7 @@ impl RedHatBoyStateMachine {
 
     fn kill(self) -> Self {
         match self {
-            RedHatBoyStateMachine::Running(val) => RedHatBoyStateMachine::Dead(val.into()),
+            RedHatBoyStateMachine::Running(val) => RedHatBoyStateMachine::Crashing(val.into()),
             _ => self,
         }
     }
@@ -360,13 +360,13 @@ impl RedHatBoyStateMachine {
 
                 RedHatBoyStateMachine::Running(val)
             }
-            RedHatBoyStateMachine::Dead(mut val) => {
+            RedHatBoyStateMachine::Crashing(mut val) => {
                 val.object = val.object.update(frame_count);
 
                 if val.object.animation_finished(frame_count) {
                     RedHatBoyStateMachine::GameOver(val.into())
                 } else {
-                    RedHatBoyStateMachine::Dead(val)
+                    RedHatBoyStateMachine::Crashing(val)
                 }
             }
             RedHatBoyStateMachine::GameOver(mut val) => {
@@ -387,7 +387,7 @@ struct Idle;
 struct Jumping;
 struct Running;
 struct Sliding;
-struct Dead;
+struct Crashing;
 struct GameOver;
 
 impl RedHatBoyState<Idle> {
@@ -444,10 +444,10 @@ impl From<RedHatBoyState<Running>> for RedHatBoyState<Jumping> {
     }
 }
 
-impl From<RedHatBoyState<Running>> for RedHatBoyState<Dead> {
+impl From<RedHatBoyState<Running>> for RedHatBoyState<Crashing> {
     fn from(machine: RedHatBoyState<Running>) -> Self {
         RedHatBoyState {
-            _state: Dead {},
+            _state: Crashing {},
             object: machine.object.reset_frame().kill(),
         }
     }
@@ -471,8 +471,8 @@ impl From<RedHatBoyState<Sliding>> for RedHatBoyState<Running> {
     }
 }
 
-impl From<RedHatBoyState<Dead>> for RedHatBoyState<GameOver> {
-    fn from(machine: RedHatBoyState<Dead>) -> Self {
+impl From<RedHatBoyState<Crashing>> for RedHatBoyState<GameOver> {
+    fn from(machine: RedHatBoyState<Crashing>) -> Self {
         RedHatBoyState {
             _state: GameOver {},
             object: machine.object,
