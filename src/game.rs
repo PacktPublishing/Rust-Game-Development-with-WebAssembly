@@ -12,8 +12,7 @@ const FLOOR: i16 = 485;
 pub struct WalkTheDog {
     background: Option<Image>,
     rock: Option<Image>,
-    sprite: Option<SpriteSheet>,
-    rhb: RedHatBoy,
+    rhb: Option<RedHatBoy>,
 }
 
 impl WalkTheDog {
@@ -21,8 +20,7 @@ impl WalkTheDog {
         WalkTheDog {
             background: None,
             rock: None,
-            sprite: None,
-            rhb: RedHatBoy::new(),
+            rhb: None,
         }
     }
 
@@ -57,36 +55,38 @@ impl Game for WalkTheDog {
             Point { x: 200, y: 546 },
         ));
 
-        self.sprite = Some(SpriteSheet::new(image, sheet));
+        self.rhb = Some(RedHatBoy::new(SpriteSheet::new(image, sheet)));
 
         Ok(())
     }
 
     fn update(&mut self, keystate: &KeyState) {
         if keystate.is_pressed("ArrowRight") {
-            self.rhb.run();
+            self.rhb.as_mut().unwrap().run();
         }
 
         if keystate.is_pressed("ArrowLeft") {
-            self.rhb.moonwalk();
+            self.rhb.as_mut().unwrap().moonwalk();
         }
 
         if keystate.is_pressed("Space") {
-            self.rhb.jump();
+            self.rhb.as_mut().unwrap().jump();
         }
 
         if keystate.is_pressed("ArrowDown") {
-            self.rhb.slide();
+            self.rhb.as_mut().unwrap().slide();
         }
 
-        self.rhb.update();
+        self.rhb.as_mut().unwrap().update();
 
         // Collisions
-        if self.rhb.collides_with(
-            &self.sprite.as_ref().unwrap(),
-            &self.rock.as_ref().unwrap().bounding_box(),
-        ) {
-            self.rhb.kill();
+        if self
+            .rhb
+            .as_ref()
+            .unwrap()
+            .collides_with(&self.rock.as_ref().unwrap().bounding_box())
+        {
+            self.rhb.as_mut().unwrap().kill();
         }
     }
 
@@ -101,28 +101,30 @@ impl Game for WalkTheDog {
         self.draw_background(renderer);
         self.draw_rock(renderer);
 
-        let animation = &self.rhb.animation();
-
-        if let Some(sprite) = &self.sprite {
-            sprite.draw(
-                renderer,
-                animation,
-                &(self.rhb.frame() / 3).into(),
-                &self.rhb.position(),
-            );
-        }
+        self.rhb.as_ref().as_mut().unwrap().draw(&renderer);
     }
 }
 
 struct RedHatBoy {
     state: Option<RedHatBoyStateMachine>,
+    sprite_sheet: SpriteSheet,
 }
 
 impl RedHatBoy {
-    fn new() -> Self {
+    fn new(sprite_sheet: SpriteSheet) -> Self {
         RedHatBoy {
             state: Some(RedHatBoyStateMachine::Idle(RedHatBoyState::new())),
+            sprite_sheet,
         }
+    }
+
+    fn draw(&self, renderer: &Renderer) {
+        self.sprite_sheet.draw(
+            renderer,
+            self.animation(),
+            &(self.frame() / 3).into(),
+            &self.position(),
+        );
     }
 
     fn bounding_box(&self, sheet: &SpriteSheet) -> Rect {
@@ -135,8 +137,8 @@ impl RedHatBoy {
         }
     }
 
-    fn collides_with(&self, sheet: &SpriteSheet, rect: &Rect) -> bool {
-        self.bounding_box(sheet).intersects(rect)
+    fn collides_with(&self, rect: &Rect) -> bool {
+        self.bounding_box(&self.sprite_sheet).intersects(rect)
     }
 
     fn animation(&self) -> &str {
