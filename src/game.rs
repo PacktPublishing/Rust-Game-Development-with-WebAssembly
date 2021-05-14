@@ -57,17 +57,7 @@ impl Game for WalkTheDog {
             Point { x: 200, y: 546 },
         ));
 
-        self.sprite = Some(SpriteSheet::new(
-            image,
-            sheet,
-            vec![
-                "Idle".to_string(),
-                "Run".to_string(),
-                "Jump".to_string(),
-                "Slide".to_string(),
-                "Dead".to_string(),
-            ],
-        ));
+        self.sprite = Some(SpriteSheet::new(image, sheet));
 
         Ok(())
     }

@@ -83,7 +83,7 @@ pub struct SpriteSheet {
 }
 
 impl SpriteSheet {
-    pub fn new(image: HtmlImageElement, sheet: Sheet, animations: Vec<String>) -> Self {
+    pub fn new(image: HtmlImageElement, sheet: Sheet) -> Self {
         SpriteSheet { image, sheet }
     }
 
