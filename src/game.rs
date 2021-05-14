@@ -1,18 +1,17 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use web_sys::HtmlImageElement;
 
 use crate::{
     browser,
-    engine::{self, Game, KeyState, Point, Rect, Renderer, SpriteSheet, Vector},
+    engine::{self, Game, Image, KeyState, Point, Rect, Renderer, SpriteSheet, Vector},
 };
 
 const GRAVITY: f32 = 1.0;
 const FLOOR: i16 = 485;
 
 pub struct WalkTheDog {
-    background: Option<HtmlImageElement>,
-    rock: Option<HtmlImageElement>,
+    background: Option<Image>,
+    rock: Option<Image>,
     sprite: Option<SpriteSheet>,
     rhb: RedHatBoy,
 }
@@ -29,41 +28,13 @@ impl WalkTheDog {
 
     fn draw_rock(&self, renderer: &Renderer) {
         if let Some(rock) = &self.rock {
-            renderer.draw_image(
-                &rock,
-                &Rect {
-                    x: 0.0,
-                    y: 0.0,
-                    width: 90.0,
-                    height: 54.0,
-                },
-                &Rect {
-                    x: 200.0,
-                    y: 546.0,
-                    width: 90.0,
-                    height: 54.0,
-                },
-            );
+            rock.draw(renderer);
         }
     }
 
     fn draw_background(&self, renderer: &Renderer) {
         if let Some(background) = &self.background {
-            renderer.draw_image(
-                &background,
-                &Rect {
-                    x: 0.0,
-                    y: 51.0,
-                    width: 600.0,
-                    height: 600.0,
-                },
-                &Rect {
-                    x: 0.0,
-                    y: 0.0,
-                    width: 600.0,
-                    height: 600.0,
-                },
-            );
+            background.draw(renderer);
         }
     }
 }
@@ -76,8 +47,15 @@ impl Game for WalkTheDog {
         let sheet = json.into_serde()?;
         let image = engine::load_image("rhb.png").await?;
 
-        self.background = Some(engine::load_image("BG.png").await?);
-        self.rock = Some(engine::load_image("Stone.png").await?);
+        self.background = Some(Image::new(
+            engine::load_image("BG.png").await?,
+            Point { x: 0, y: 0 },
+        ));
+
+        self.rock = Some(Image::new(
+            engine::load_image("Stone.png").await?,
+            Point { x: 200, y: 546 },
+        ));
 
         self.sprite = Some(SpriteSheet::new(
             image,
@@ -116,14 +94,8 @@ impl Game for WalkTheDog {
         // Collisions
         if self.rhb.collides_with(
             &self.sprite.as_ref().unwrap(),
-            &Rect {
-                x: 200.0,
-                y: 546.0,
-                width: 90.0,
-                height: 54.0,
-            },
+            &self.rock.as_ref().unwrap().bounding_box(),
         ) {
-            log!("COLLISION!");
             self.rhb.kill();
         }
     }

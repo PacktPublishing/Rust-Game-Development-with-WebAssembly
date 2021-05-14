@@ -53,6 +53,30 @@ pub struct Sheet {
     frames: HashMap<String, Cell>,
 }
 
+pub struct Image {
+    image: HtmlImageElement,
+    position: Point,
+}
+
+impl Image {
+    pub fn new(image: HtmlImageElement, position: Point) -> Self {
+        Image { image, position }
+    }
+
+    pub fn draw(&self, renderer: &Renderer) {
+        renderer.draw_whole_image(&self.image, &self.position);
+    }
+
+    pub fn bounding_box(&self) -> Rect {
+        Rect {
+            x: self.position.x as f32,
+            y: self.position.y as f32,
+            width: self.image.width() as f32,
+            height: self.image.height() as f32,
+        }
+    }
+}
+
 pub struct SpriteSheet {
     image: HtmlImageElement,
     sheet: Sheet,
@@ -141,6 +165,12 @@ impl Renderer {
                 destination.width.into(),
                 destination.height.into(),
             )
+            .expect("Drawing is throwing exceptions! Unrecoverable error.");
+    }
+
+    pub fn draw_whole_image(&self, image: &HtmlImageElement, position: &Point) {
+        self.context
+            .draw_image_with_html_image_element(image, position.x.into(), position.y.into())
             .expect("Drawing is throwing exceptions! Unrecoverable error.");
     }
 
