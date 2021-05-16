@@ -106,14 +106,14 @@ impl Game for WalkTheDog {
 }
 
 struct RedHatBoy {
-    state: Option<RedHatBoyStateMachine>,
+    state: RedHatBoyStateMachine,
     sprite_sheet: SpriteSheet,
 }
 
 impl RedHatBoy {
     fn new(sprite_sheet: SpriteSheet) -> Self {
         RedHatBoy {
-            state: Some(RedHatBoyStateMachine::Idle(RedHatBoyState::new())),
+            state: RedHatBoyStateMachine::Idle(RedHatBoyState::new()),
             sprite_sheet,
         }
     }
@@ -142,63 +142,43 @@ impl RedHatBoy {
     }
 
     fn animation(&self) -> &str {
-        self.state
-            .as_ref()
-            .map(|state| state.animation())
-            .unwrap_or("")
+        self.state.animation()
     }
 
     fn frame(&self) -> u8 {
-        self.state
-            .as_ref()
-            .map(|state| state.game_object().frame)
-            .unwrap_or(0)
+        self.state.game_object().frame
     }
 
     fn position(&self) -> &Point {
-        self.state
-            .as_ref()
-            .map(|state| &state.game_object().position)
-            .unwrap_or(&Point { x: 0, y: 0 })
+        &self.state.game_object().position
     }
 
     fn run(&mut self) {
-        if let Some(state) = self.state.take() {
-            self.state.replace(state.run());
-        }
+        self.state = self.state.run();
     }
 
     fn kill(&mut self) {
-        if let Some(state) = self.state.take() {
-            self.state.replace(state.kill());
-        }
+        self.state = self.state.kill();
     }
 
     fn moonwalk(&mut self) {
-        if let Some(state) = self.state.take() {
-            self.state.replace(state.moonwalk());
-        }
+        self.state = self.state.moonwalk();
     }
 
     fn jump(&mut self) {
-        if let Some(state) = self.state.take() {
-            self.state.replace(state.jump());
-        }
+        self.state = self.state.jump();
     }
 
     fn slide(&mut self) {
-        if let Some(state) = self.state.take() {
-            self.state.replace(state.slide());
-        }
+        self.state = self.state.slide();
     }
 
     fn update(&mut self) {
-        if let Some(state) = self.state.take() {
-            self.state.replace(state.update());
-        }
+        self.state = self.state.update();
     }
 }
 
+#[derive(Copy, Clone)]
 enum RedHatBoyStateMachine {
     Idle(RedHatBoyState<Idle>),
     Running(RedHatBoyState<Running>),
@@ -328,16 +308,23 @@ impl RedHatBoyStateMachine {
     }
 }
 
+#[derive(Copy, Clone)]
 struct RedHatBoyState<S> {
     _state: S,
     object: GameObject,
 }
 
+#[derive(Copy, Clone)]
 struct Idle;
+#[derive(Copy, Clone)]
 struct Jumping;
+#[derive(Copy, Clone)]
 struct Running;
+#[derive(Copy, Clone)]
 struct Sliding;
+#[derive(Copy, Clone)]
 struct Crashing;
+#[derive(Copy, Clone)]
 struct GameOver;
 
 impl RedHatBoyState<Idle> {
@@ -430,7 +417,7 @@ impl From<RedHatBoyState<Crashing>> for RedHatBoyState<GameOver> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 struct GameObject {
     frame: u8,
     position: Point,
