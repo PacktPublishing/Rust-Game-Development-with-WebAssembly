@@ -111,6 +111,30 @@ impl SpriteSheet {
         }
     }
 
+    pub fn draw_entry(&self, renderer: &Renderer, entry: &str, position: &Point) {
+        let sprite = self
+            .sheet
+            .frames
+            .get(entry)
+            .expect(&format!("Cell {} not found", entry));
+
+        renderer.draw_image(
+            &self.image,
+            &Rect {
+                x: sprite.frame.x.into(),
+                y: sprite.frame.y.into(),
+                width: sprite.frame.width.into(),
+                height: sprite.frame.height.into(),
+            },
+            &Rect {
+                x: position.x as f32,
+                y: position.y as f32,
+                width: sprite.frame.width.into(),
+                height: sprite.frame.height.into(),
+            },
+        );
+    }
+
     pub fn draw(&self, renderer: &Renderer, animation: &str, frame: &i16, position: &Point) {
         let bounding_box = self.bounding_box_for(animation, frame);
         let cell = format!("{} ({}).png", animation, frame + 1);

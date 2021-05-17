@@ -13,6 +13,7 @@ pub struct WalkTheDog {
     background: Option<Image>,
     rock: Option<Image>,
     rhb: Option<RedHatBoy>,
+    platform: Option<SpriteSheet>,
 }
 
 impl WalkTheDog {
@@ -21,6 +22,7 @@ impl WalkTheDog {
             background: None,
             rock: None,
             rhb: None,
+            platform: None,
         }
     }
 
@@ -35,16 +37,19 @@ impl WalkTheDog {
             background.draw(renderer);
         }
     }
+
+    fn draw_platform(&self, renderer: &Renderer) {
+        if let Some(platform) = &self.platform {
+            platform.draw_entry(renderer, "13.png", &Point { x: 220, y: 400 });
+            platform.draw_entry(renderer, "14.png", &Point { x: 348, y: 400 });
+            platform.draw_entry(renderer, "15.png", &Point { x: 476, y: 400 });
+        }
+    }
 }
 
 #[async_trait(?Send)]
 impl Game for WalkTheDog {
     async fn initialize(&mut self) -> Result<()> {
-        let json = browser::fetch_json("rhb.json").await?;
-
-        let sheet = json.into_serde()?;
-        let image = engine::load_image("rhb.png").await?;
-
         self.background = Some(Image::new(
             engine::load_image("BG.png").await?,
             Point { x: 0, y: 0 },
@@ -55,7 +60,16 @@ impl Game for WalkTheDog {
             Point { x: 200, y: 546 },
         ));
 
+        let json = browser::fetch_json("rhb.json").await?;
+        let sheet = json.into_serde()?;
+        let image = engine::load_image("rhb.png").await?;
+
         self.rhb = Some(RedHatBoy::new(SpriteSheet::new(image, sheet)));
+
+        let json = browser::fetch_json("tiles.json").await?;
+        let sheet = json.into_serde()?;
+        let image = engine::load_image("tiles.png").await?;
+        self.platform = Some(SpriteSheet::new(image, sheet));
 
         Ok(())
     }
@@ -88,6 +102,16 @@ impl Game for WalkTheDog {
         {
             self.rhb.as_mut().unwrap().kill();
         }
+
+        let platform_box = Rect {
+            x: 220.0,
+            y: 400.0,
+            width: 384.0,
+            height: 128.0,
+        };
+        if self.rhb.as_ref().unwrap().landing_on(&platform_box) {
+            self.rhb.as_mut().unwrap().land();
+        }
     }
 
     fn draw(&self, renderer: &Renderer) {
@@ -101,7 +125,9 @@ impl Game for WalkTheDog {
         self.draw_background(renderer);
         self.draw_rock(renderer);
 
-        self.rhb.as_ref().as_mut().unwrap().draw(&renderer);
+        self.rhb.as_ref().as_mut().unwrap().draw(renderer);
+
+        self.draw_platform(renderer);
     }
 }
 
@@ -141,6 +167,12 @@ impl RedHatBoy {
         self.bounding_box(&self.sprite_sheet).intersects(rect)
     }
 
+    fn landing_on(&self, rect: &Rect) -> bool {
+        let self_box = self.bounding_box(&self.sprite_sheet);
+        let bottom = self_box.y + self_box.height;
+        self_box.intersects(rect) && bottom >= rect.y && bottom <= rect.y + 10.0
+    }
+
     fn animation(&self) -> &str {
         self.state.animation()
     }
@@ -155,6 +187,10 @@ impl RedHatBoy {
 
     fn run(&mut self) {
         self.state = self.state.run();
+    }
+
+    fn land(&mut self) {
+        self.state = self.state.land();
     }
 
     fn kill(&mut self) {
@@ -226,6 +262,13 @@ impl RedHatBoyStateMachine {
         match self {
             RedHatBoyStateMachine::Idle(val) => RedHatBoyStateMachine::Running(val.into()),
             RedHatBoyStateMachine::Running(val) => RedHatBoyStateMachine::Running(val.go_right()),
+            _ => self,
+        }
+    }
+
+    fn land(self) -> Self {
+        match self {
+            RedHatBoyStateMachine::Jumping(val) => RedHatBoyStateMachine::Running(val.into()),
             _ => self,
         }
     }
@@ -468,7 +511,7 @@ impl GameObject {
 
     fn land(mut self) -> Self {
         self.velocity.y = 0.0;
-        self.position.y = FLOOR;
+        // self.position.y = FLOOR;
         self
     }
 
