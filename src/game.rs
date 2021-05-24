@@ -496,7 +496,7 @@ impl GameObject {
 
     fn update(mut self, frame_count: u8) -> Self {
         self.position.x += self.velocity.x as i16;
-        self.position.y = self.position.y + self.velocity.y as i16;
+        self.position.y += self.velocity.y as i16;
         if self.frame < (frame_count * 3) - 1 {
             self.frame += 1;
         } else {
