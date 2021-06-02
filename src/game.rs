@@ -7,7 +7,7 @@ use crate::{
 };
 
 const GRAVITY: f32 = 1.0;
-const FLOOR: i16 = 485;
+const FLOOR: i16 = 600;
 
 pub struct WalkTheDog {
     background: Option<Image>,
@@ -104,8 +104,8 @@ impl Game for WalkTheDog {
             self.rhb.as_mut().unwrap().land_on(platform_box.y as i16);
         }
 
-        if self.rhb.as_ref().unwrap().position().y > FLOOR {
-            self.rhb.as_mut().unwrap().land_on(485);
+        if self.rhb.as_ref().unwrap().landing() {
+            self.rhb.as_mut().unwrap().land_on(FLOOR);
         }
 
         // Collisions
@@ -172,13 +172,19 @@ impl RedHatBoy {
         self.bounding_box(&self.sprite_sheet).intersects(rect)
     }
 
+    fn landing(&self) -> bool {
+        self.position().y as f32 + self.bounding_box(&self.sprite_sheet).height > FLOOR as f32
+    }
+
     fn landing_on(&self, rect: &Rect) -> bool {
         //        self.bounding_box(&self.sprite_sheet).intersects(rect) && self.position().y as f32 > rect.y
         false
     }
 
     fn land_on(&mut self, y: i16) {
-        self.state = self.state.land(y)
+        self.state = self
+            .state
+            .land((y as f32 - self.bounding_box(&self.sprite_sheet).height) as i16)
     }
 
     fn animation(&self) -> &str {
@@ -301,27 +307,27 @@ impl RedHatBoyStateMachine {
     fn land(self, on: i16) -> Self {
         match self {
             RedHatBoyStateMachine::Jumping(mut val) => {
-                val.object = val.object.set_y_position(on);
+                val.object = val.object.set_on(on);
                 RedHatBoyStateMachine::Running(val.into())
             }
             RedHatBoyStateMachine::Idle(mut val) => {
-                val.object = val.object.set_y_position(on);
+                val.object = val.object.set_on(on);
                 RedHatBoyStateMachine::Idle(val)
             }
             RedHatBoyStateMachine::Running(mut val) => {
-                val.object = val.object.set_y_position(on);
+                val.object = val.object.set_on(on);
                 RedHatBoyStateMachine::Running(val)
             }
             RedHatBoyStateMachine::Sliding(mut val) => {
-                val.object = val.object.set_y_position(on);
+                val.object = val.object.set_on(on);
                 RedHatBoyStateMachine::Sliding(val)
             }
             RedHatBoyStateMachine::Crashing(mut val) => {
-                val.object = val.object.set_y_position(on);
+                val.object = val.object.set_on(on);
                 RedHatBoyStateMachine::Crashing(val)
             }
             RedHatBoyStateMachine::GameOver(mut val) => {
-                val.object = val.object.set_y_position(on);
+                val.object = val.object.set_on(on);
                 RedHatBoyStateMachine::GameOver(val)
             }
         }
@@ -396,7 +402,7 @@ impl RedHatBoyState<Idle> {
     fn new() -> Self {
         let game_object = GameObject {
             frame: 0,
-            position: engine::Point { x: 0, y: FLOOR },
+            position: engine::Point { x: 0, y: 485 },
             velocity: Vector { x: 0.0, y: 0.0 },
         };
 
@@ -506,7 +512,7 @@ impl GameObject {
         self
     }
 
-    fn set_y_position(mut self, y: i16) -> GameObject {
+    fn set_on(mut self, y: i16) -> GameObject {
         self.position.y = y;
         self
     }
