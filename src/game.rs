@@ -177,8 +177,8 @@ impl RedHatBoy {
     }
 
     fn landing_on(&self, rect: &Rect) -> bool {
-        //        self.bounding_box(&self.sprite_sheet).intersects(rect) && self.position().y as f32 > rect.y
-        false
+        self.bounding_box(&self.sprite_sheet).intersects(rect)
+            && (self.position().y as f32) < rect.y
     }
 
     fn land_on(&mut self, y: i16) {
