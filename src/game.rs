@@ -93,6 +93,21 @@ impl Game for WalkTheDog {
 
         self.rhb.as_mut().unwrap().update();
 
+        let platform_box = Rect {
+            x: 220.0,
+            y: 400.0,
+            width: 384.0,
+            height: 128.0,
+        };
+
+        if self.rhb.as_ref().unwrap().landing_on(&platform_box) {
+            self.rhb.as_mut().unwrap().land_on(platform_box.y as i16);
+        }
+
+        if self.rhb.as_ref().unwrap().position().y > FLOOR {
+            self.rhb.as_mut().unwrap().land_on(485);
+        }
+
         // Collisions
         if self
             .rhb
@@ -101,22 +116,6 @@ impl Game for WalkTheDog {
             .collides_with(&self.rock.as_ref().unwrap().bounding_box())
         {
             self.rhb.as_mut().unwrap().kill();
-        }
-
-        let platform_box = Rect {
-            x: 220.0,
-            y: 400.0,
-            width: 384.0,
-            height: 128.0,
-        };
-
-        log!("Position {}", self.rhb.as_ref().unwrap().position().y);
-        if self.rhb.as_ref().unwrap().landing_on(&platform_box) {
-            self.rhb.as_mut().unwrap().land();
-        } else if self.rhb.as_ref().unwrap().landed() {
-            self.rhb.as_mut().unwrap().land();
-        } else {
-            self.rhb.as_mut().unwrap().apply_gravity();
         }
     }
 
@@ -174,18 +173,12 @@ impl RedHatBoy {
     }
 
     fn landing_on(&self, rect: &Rect) -> bool {
-        let self_box = self.bounding_box(&self.sprite_sheet);
-        let bottom = self_box.y + self_box.height;
-        log!("bottom {} rect.y {}", bottom, rect.y);
-        self_box.intersects(rect) && bottom >= rect.y - 8.0 && bottom <= rect.y + 8.0
+        //        self.bounding_box(&self.sprite_sheet).intersects(rect) && self.position().y as f32 > rect.y
+        false
     }
 
-    fn landed(&self) -> bool {
-        self.state.game_object().landed()
-    }
-
-    fn apply_gravity(&mut self) {
-        self.state = self.state.apply_gravity();
+    fn land_on(&mut self, y: i16) {
+        self.state = self.state.land(y)
     }
 
     fn animation(&self) -> &str {
@@ -202,10 +195,6 @@ impl RedHatBoy {
 
     fn run(&mut self) {
         self.state = self.state.run();
-    }
-
-    fn land(&mut self) {
-        self.state = self.state.land();
     }
 
     fn kill(&mut self) {
@@ -273,47 +262,10 @@ impl RedHatBoyStateMachine {
         }
     }
 
-    fn apply_gravity(self) -> Self {
-        let falling_boy = self.game_object().apply_gravity();
-        match self {
-            RedHatBoyStateMachine::Idle(mut val) => {
-                val.object = falling_boy;
-                RedHatBoyStateMachine::Idle(val)
-            }
-            RedHatBoyStateMachine::Running(mut val) => {
-                val.object = falling_boy;
-                RedHatBoyStateMachine::Running(val)
-            }
-            RedHatBoyStateMachine::Jumping(mut val) => {
-                val.object = falling_boy;
-                RedHatBoyStateMachine::Jumping(val)
-            }
-            RedHatBoyStateMachine::Sliding(mut val) => {
-                val.object = falling_boy;
-                RedHatBoyStateMachine::Sliding(val)
-            }
-            RedHatBoyStateMachine::Crashing(mut val) => {
-                val.object = falling_boy;
-                RedHatBoyStateMachine::Crashing(val)
-            }
-            RedHatBoyStateMachine::GameOver(mut val) => {
-                val.object = falling_boy;
-                RedHatBoyStateMachine::GameOver(val)
-            }
-        }
-    }
-
     fn run(self) -> Self {
         match self {
             RedHatBoyStateMachine::Idle(val) => RedHatBoyStateMachine::Running(val.into()),
             RedHatBoyStateMachine::Running(val) => RedHatBoyStateMachine::Running(val.go_right()),
-            _ => self,
-        }
-    }
-
-    fn land(self) -> Self {
-        match self {
-            RedHatBoyStateMachine::Jumping(val) => RedHatBoyStateMachine::Running(val.into()),
             _ => self,
         }
     }
@@ -346,6 +298,35 @@ impl RedHatBoyStateMachine {
         }
     }
 
+    fn land(self, on: i16) -> Self {
+        match self {
+            RedHatBoyStateMachine::Jumping(mut val) => {
+                val.object = val.object.set_y_position(on);
+                RedHatBoyStateMachine::Running(val.into())
+            }
+            RedHatBoyStateMachine::Idle(mut val) => {
+                val.object = val.object.set_y_position(on);
+                RedHatBoyStateMachine::Idle(val)
+            }
+            RedHatBoyStateMachine::Running(mut val) => {
+                val.object = val.object.set_y_position(on);
+                RedHatBoyStateMachine::Running(val)
+            }
+            RedHatBoyStateMachine::Sliding(mut val) => {
+                val.object = val.object.set_y_position(on);
+                RedHatBoyStateMachine::Sliding(val)
+            }
+            RedHatBoyStateMachine::Crashing(mut val) => {
+                val.object = val.object.set_y_position(on);
+                RedHatBoyStateMachine::Crashing(val)
+            }
+            RedHatBoyStateMachine::GameOver(mut val) => {
+                val.object = val.object.set_y_position(on);
+                RedHatBoyStateMachine::GameOver(val)
+            }
+        }
+    }
+
     fn update(self) -> Self {
         let frame_count = self.frame_count();
 
@@ -353,11 +334,7 @@ impl RedHatBoyStateMachine {
             RedHatBoyStateMachine::Jumping(mut val) => {
                 val.object = val.object.update(frame_count);
 
-                if val.object.landed() {
-                    RedHatBoyStateMachine::Running(val.into())
-                } else {
-                    RedHatBoyStateMachine::Jumping(val)
-                }
+                RedHatBoyStateMachine::Jumping(val)
             }
             RedHatBoyStateMachine::Sliding(mut val) => {
                 val.object = val.object.update(frame_count);
@@ -529,17 +506,18 @@ impl GameObject {
         self
     }
 
+    fn set_y_position(mut self, y: i16) -> GameObject {
+        self.position.y = y;
+        self
+    }
+
     fn jump(mut self) -> Self {
         self.velocity.y = -25.0;
         self
     }
 
-    fn apply_gravity(mut self) -> Self {
-        self.velocity.y += GRAVITY;
-        self
-    }
-
     fn update(mut self, frame_count: u8) -> Self {
+        self.velocity.y += GRAVITY;
         self.position.x += self.velocity.x as i16;
         self.position.y += self.velocity.y as i16;
         if self.frame < (frame_count * 3) - 1 {
@@ -548,10 +526,6 @@ impl GameObject {
             self.frame = 0;
         };
         self
-    }
-
-    fn landed(&self) -> bool {
-        self.position.y >= FLOOR
     }
 
     fn land(mut self) -> Self {
