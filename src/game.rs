@@ -523,7 +523,10 @@ impl GameObject {
     }
 
     fn update(mut self, frame_count: u8) -> Self {
-        self.velocity.y += GRAVITY;
+        if self.velocity.y < 20.0 {
+            self.velocity.y += GRAVITY;
+        }
+
         self.position.x += self.velocity.x as i16;
         self.position.y += self.velocity.y as i16;
         if self.frame < (frame_count * 3) - 1 {
