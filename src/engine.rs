@@ -193,31 +193,6 @@ impl SpriteSheet {
             },
         );
     }
-
-    pub fn draw_frame(&self, renderer: &Renderer, animation: &str, frame: &i16, position: &Point) {
-        let cell = format!("{} ({}).png", animation, frame + 1);
-        let sprite = self
-            .sheet
-            .frames
-            .get(&cell)
-            .expect(&format!("Cell {} not found", cell));
-
-        let first_sprite = self
-            .sheet
-            .frames
-            .get(&format!("{} (1).png", animation))
-            .expect(&format!("Cell 1 not found"));
-
-        let offset_x = sprite.sprite_source_size.x - first_sprite.sprite_source_size.x;
-        self.draw(
-            renderer,
-            &cell,
-            &Point {
-                x: ((position.x as f32) + offset_x) as i16,
-                y: position.y,
-            },
-        );
-    }
 }
 
 pub struct Renderer {
