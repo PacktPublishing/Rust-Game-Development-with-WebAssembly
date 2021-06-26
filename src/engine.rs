@@ -111,7 +111,7 @@ impl SpriteSheet {
         }
     }
 
-    pub fn draw_entry(&self, renderer: &Renderer, entry: &str, position: &Point) {
+    pub fn draw(&self, renderer: &Renderer, entry: &str, position: &Point) {
         let sprite = self
             .sheet
             .frames
@@ -135,7 +135,7 @@ impl SpriteSheet {
         );
     }
 
-    pub fn draw(&self, renderer: &Renderer, animation: &str, frame: &i16, position: &Point) {
+    pub fn draw_frame(&self, renderer: &Renderer, animation: &str, frame: &i16, position: &Point) {
         let cell = format!("{} ({}).png", animation, frame + 1);
         let sprite = self
             .sheet
@@ -150,20 +150,12 @@ impl SpriteSheet {
             .expect(&format!("Cell 1 not found"));
 
         let offset_x = sprite.sprite_source_size.x - first_sprite.sprite_source_size.x;
-
-        renderer.draw_image(
-            &self.image,
-            &Rect {
-                x: sprite.frame.x.into(),
-                y: sprite.frame.y.into(),
-                width: sprite.frame.width.into(),
-                height: sprite.frame.height.into(),
-            },
-            &Rect {
-                x: (position.x as f32) + offset_x,
-                y: position.y as f32,
-                width: sprite.frame.width.into(),
-                height: sprite.frame.height.into(),
+        self.draw(
+            renderer,
+            &cell,
+            &Point {
+                x: ((position.x as f32) + offset_x) as i16,
+                y: position.y,
             },
         );
     }

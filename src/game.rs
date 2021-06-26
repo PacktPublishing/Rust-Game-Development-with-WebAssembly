@@ -40,9 +40,9 @@ impl WalkTheDog {
 
     fn draw_platform(&self, renderer: &Renderer) {
         if let Some(platform) = &self.platform {
-            platform.draw_entry(renderer, "13.png", &Point { x: 220, y: 400 });
-            platform.draw_entry(renderer, "14.png", &Point { x: 348, y: 400 });
-            platform.draw_entry(renderer, "15.png", &Point { x: 476, y: 400 });
+            platform.draw(renderer, "13.png", &Point { x: 220, y: 400 });
+            platform.draw(renderer, "14.png", &Point { x: 348, y: 400 });
+            platform.draw(renderer, "15.png", &Point { x: 476, y: 400 });
         }
     }
 }
@@ -150,7 +150,7 @@ impl RedHatBoy {
     }
 
     fn draw(&self, renderer: &Renderer) {
-        self.sprite_sheet.draw(
+        self.sprite_sheet.draw_frame(
             renderer,
             self.animation(),
             &(self.frame() / 3).into(),
