@@ -3,11 +3,16 @@ use async_trait::async_trait;
 
 use crate::{
     browser,
-    engine::{self, Game, Image, KeyState, Point, Rect, Renderer, SpriteSheet, Vector},
+    engine::{self, Animation, Game, Image, KeyState, Point, Rect, Renderer, SpriteSheet, Vector},
 };
 
 const GRAVITY: f32 = 1.0;
 const FLOOR: i16 = 600;
+const IDLE_ANIMATION: &str = "Idle";
+const RUNNING_ANIMATION: &str = "Run";
+const JUMPING_ANIMATION: &str = "Jump";
+const SLIDING_ANIMATION: &str = "Slide";
+const DEAD_ANIMATION: &str = "Dead";
 
 pub struct WalkTheDog {
     background: Option<Image>,
@@ -64,7 +69,16 @@ impl Game for WalkTheDog {
         let sheet = json.into_serde()?;
         let image = engine::load_image("rhb.png").await?;
 
-        self.rhb = Some(RedHatBoy::new(SpriteSheet::new(image, sheet)));
+        self.rhb = Some(RedHatBoy::new(Animation::new(
+            SpriteSheet::new(image, sheet),
+            vec![
+                IDLE_ANIMATION,
+                RUNNING_ANIMATION,
+                JUMPING_ANIMATION,
+                SLIDING_ANIMATION,
+                DEAD_ANIMATION,
+            ],
+        )));
 
         let json = browser::fetch_json("tiles.json").await?;
         let sheet = json.into_serde()?;
@@ -138,28 +152,31 @@ impl Game for WalkTheDog {
 
 struct RedHatBoy {
     state: RedHatBoyStateMachine,
-    sprite_sheet: SpriteSheet,
+    animation: Animation,
 }
 
 impl RedHatBoy {
-    fn new(sprite_sheet: SpriteSheet) -> Self {
+    fn new(animation: Animation) -> Self {
         RedHatBoy {
             state: RedHatBoyStateMachine::Idle(RedHatBoyState::new()),
-            sprite_sheet,
+            animation,
         }
     }
 
     fn draw(&self, renderer: &Renderer) {
-        self.sprite_sheet.draw_frame(
+        self.animation.draw(
             renderer,
-            self.animation(),
+            self.animation_name(),
             &(self.frame() / 3).into(),
             &self.position(),
         );
     }
 
-    fn bounding_box(&self, sheet: &SpriteSheet) -> Rect {
-        let bounding_box = sheet.bounding_box_for(self.animation(), &((self.frame() / 3) as i16));
+    fn bounding_box(&self) -> Rect {
+        let bounding_box = self
+            .animation
+            .bounding_box_for(self.animation_name(), &((self.frame() / 3) as i16));
+
         Rect {
             x: self.position().x as f32 + bounding_box.x,
             y: self.position().y as f32 + bounding_box.y,
@@ -169,25 +186,24 @@ impl RedHatBoy {
     }
 
     fn collides_with(&self, rect: &Rect) -> bool {
-        self.bounding_box(&self.sprite_sheet).intersects(rect)
+        self.bounding_box().intersects(rect)
     }
 
     fn landing(&self) -> bool {
-        self.position().y as f32 + self.bounding_box(&self.sprite_sheet).height > FLOOR as f32
+        self.position().y as f32 + self.bounding_box().height > FLOOR as f32
     }
 
     fn landing_on(&self, rect: &Rect) -> bool {
-        self.bounding_box(&self.sprite_sheet).intersects(rect)
-            && (self.position().y as f32) < rect.y
+        self.bounding_box().intersects(rect) && (self.position().y as f32) < rect.y
     }
 
     fn land_on(&mut self, y: i16) {
         self.state = self
             .state
-            .land((y as f32 - self.bounding_box(&self.sprite_sheet).height) as i16)
+            .land((y as f32 - self.bounding_box().height) as i16)
     }
 
-    fn animation(&self) -> &str {
+    fn animation_name(&self) -> &str {
         self.state.animation()
     }
 
@@ -259,12 +275,12 @@ impl RedHatBoyStateMachine {
 
     fn animation(&self) -> &str {
         match self {
-            RedHatBoyStateMachine::Idle(_) => "Idle",
-            RedHatBoyStateMachine::Running(_) => "Run",
-            RedHatBoyStateMachine::Jumping(_) => "Jump",
-            RedHatBoyStateMachine::Sliding(_) => "Slide",
-            RedHatBoyStateMachine::Crashing(_) => "Dead",
-            RedHatBoyStateMachine::GameOver(_) => "Dead",
+            RedHatBoyStateMachine::Idle(_) => IDLE_ANIMATION,
+            RedHatBoyStateMachine::Running(_) => RUNNING_ANIMATION,
+            RedHatBoyStateMachine::Jumping(_) => JUMPING_ANIMATION,
+            RedHatBoyStateMachine::Sliding(_) => SLIDING_ANIMATION,
+            RedHatBoyStateMachine::Crashing(_) => DEAD_ANIMATION,
+            RedHatBoyStateMachine::GameOver(_) => DEAD_ANIMATION,
         }
     }
 

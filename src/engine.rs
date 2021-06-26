@@ -77,6 +77,61 @@ impl Image {
     }
 }
 
+pub struct Animation {
+    sheet: SpriteSheet,
+    offsets: HashMap<&'static str, Vec<i16>>,
+}
+
+impl Animation {
+    pub fn new(sheet: SpriteSheet, animations: Vec<&'static str>) -> Self {
+        let offset_lookup = animations
+            .iter()
+            .fold(HashMap::new(), |mut lookup, animation| {
+                let first_sprite = sheet
+                    .get_frame(&format!("{} (1).png", animation))
+                    .expect(&format!("No animation named {}", animation));
+
+                lookup.insert(
+                    animation.clone(),
+                    (1..)
+                        .into_iter()
+                        .map(|frame| format!("{} ({}).png", animation, frame))
+                        .map(|frame_name| sheet.get_frame(&frame_name))
+                        .take_while(|cell| cell.is_some())
+                        .map(|cell| {
+                            (cell.unwrap().sprite_source_size.x - first_sprite.sprite_source_size.x)
+                                as i16
+                        })
+                        .collect(),
+                );
+                lookup
+            });
+
+        Animation {
+            sheet,
+            offsets: offset_lookup,
+        }
+    }
+
+    pub fn draw(&self, renderer: &Renderer, animation: &str, frame: &i16, position: &Point) {
+        let cell = format!("{} ({}).png", animation, frame + 1);
+
+        let offset_x: i16 = self.offsets[animation][*frame as usize];
+        self.sheet.draw(
+            renderer,
+            &cell,
+            &Point {
+                x: position.x + offset_x,
+                y: position.y,
+            },
+        );
+    }
+
+    pub fn bounding_box_for(&self, animation: &str, frame: &i16) -> Rect {
+        self.sheet.bounding_box_for(animation, frame)
+    }
+}
+
 pub struct SpriteSheet {
     image: HtmlImageElement,
     sheet: Sheet,
@@ -85,6 +140,10 @@ pub struct SpriteSheet {
 impl SpriteSheet {
     pub fn new(image: HtmlImageElement, sheet: Sheet) -> Self {
         SpriteSheet { image, sheet }
+    }
+
+    fn get_frame(&self, name: &str) -> Option<&Cell> {
+        self.sheet.frames.get(name)
     }
 
     pub fn bounding_box_for(&self, animation: &str, frame: &i16) -> Rect {
@@ -105,7 +164,7 @@ impl SpriteSheet {
 
         Rect {
             x: sprite.sprite_source_size.x - first_sprite.sprite_source_size.x,
-            y: sprite.sprite_source_size.y - first_sprite.sprite_source_size.y,
+            y: sprite.sprite_source_size.y,
             width: sprite.frame.width.into(),
             height: sprite.frame.height.into(),
         }
