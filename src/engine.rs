@@ -128,7 +128,15 @@ impl Animation {
     }
 
     pub fn bounding_box_for(&self, animation: &str, frame: &i16) -> Rect {
-        self.sheet.bounding_box_for(animation, frame)
+        let cell_name = format!("{} ({}).png", animation, frame + 1);
+        let bounding_box = self.sheet.bounding_box_for(&cell_name);
+
+        Rect {
+            x: self.offsets[animation][*frame as usize].into(),
+            y: 0.0,
+            width: bounding_box.width,
+            height: bounding_box.height,
+        }
     }
 }
 
@@ -146,25 +154,16 @@ impl SpriteSheet {
         self.sheet.frames.get(name)
     }
 
-    pub fn bounding_box_for(&self, animation: &str, frame: &i16) -> Rect {
-        let cell = format!("{} ({}).png", animation, frame + 1);
-        let first_cell = format!("{} (1).png", animation);
-
+    pub fn bounding_box_for(&self, cell_name: &str) -> Rect {
         let sprite = self
             .sheet
             .frames
-            .get(&cell)
-            .expect(&format!("Cell {} not found", cell));
-
-        let first_sprite = self
-            .sheet
-            .frames
-            .get(&first_cell)
-            .expect(&format!("Cell {} not found", cell));
+            .get(cell_name)
+            .expect(&format!("Cell {} not found", cell_name));
 
         Rect {
-            x: sprite.sprite_source_size.x - first_sprite.sprite_source_size.x,
-            y: sprite.sprite_source_size.y,
+            x: 0.0,
+            y: 0.0,
             width: sprite.frame.width.into(),
             height: sprite.frame.height.into(),
         }
