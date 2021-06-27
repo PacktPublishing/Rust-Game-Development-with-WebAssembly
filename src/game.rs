@@ -170,6 +170,7 @@ impl RedHatBoy {
             &(self.frame() / 3).into(),
             &self.position(),
         );
+        renderer.draw_rect("#FF0000", &self.bounding_box());
     }
 
     fn bounding_box(&self) -> Rect {
