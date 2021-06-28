@@ -45,9 +45,9 @@ impl WalkTheDog {
 
     fn draw_platform(&self, renderer: &Renderer) {
         if let Some(platform) = &self.platform {
-            platform.draw(renderer, "13.png", &Point { x: 220, y: 400 });
-            platform.draw(renderer, "14.png", &Point { x: 348, y: 400 });
-            platform.draw(renderer, "15.png", &Point { x: 476, y: 400 });
+            platform.draw(renderer, "13.png", &Point { x: 220, y: 350 });
+            platform.draw(renderer, "14.png", &Point { x: 348, y: 350 });
+            platform.draw(renderer, "15.png", &Point { x: 476, y: 350 });
         }
     }
 }
@@ -109,9 +109,9 @@ impl Game for WalkTheDog {
 
         let platform_box = Rect {
             x: 220.0,
-            y: 400.0,
+            y: 350.0,
             width: 384.0,
-            height: 128.0,
+            height: 90.0,
         };
 
         if self.rhb.as_ref().unwrap().landing_on(&platform_box) {
@@ -131,6 +131,9 @@ impl Game for WalkTheDog {
         {
             self.rhb.as_mut().unwrap().kill();
         }
+        if self.rhb.as_ref().unwrap().landing() {
+            self.rhb.as_mut().unwrap().land_on(FLOOR);
+        }
     }
 
     fn draw(&self, renderer: &Renderer) {
@@ -147,6 +150,15 @@ impl Game for WalkTheDog {
         self.rhb.as_ref().as_mut().unwrap().draw(renderer);
 
         self.draw_platform(renderer);
+        renderer.draw_rect(
+            "#FF0000",
+            &Rect {
+                x: 220.0,
+                y: 350.0,
+                width: 384.0,
+                height: 90.0,
+            },
+        );
     }
 }
 
