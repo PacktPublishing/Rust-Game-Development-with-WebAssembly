@@ -163,15 +163,6 @@ impl WalkTheDogGame {
         self.rhb.draw(renderer);
 
         self.draw_platform(renderer);
-        renderer.draw_rect(
-            "#FF0000",
-            &Rect {
-                x: 220.0,
-                y: 350.0,
-                width: 384.0,
-                height: 90.0,
-            },
-        );
     }
 }
 
@@ -195,7 +186,6 @@ impl RedHatBoy {
             &(self.frame() / 3).into(),
             &self.position(),
         );
-        renderer.draw_rect("#FF0000", &self.bounding_box());
     }
 
     fn bounding_box(&self) -> Rect {
