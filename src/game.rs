@@ -113,16 +113,18 @@ impl Game for WalkTheDog {
             width: 384.0,
             height: 90.0,
         };
+        let platforms = vec![&platform_box];
 
         if self.rhb.as_ref().unwrap().landing_on(&platform_box) {
             self.rhb.as_mut().unwrap().land_on(platform_box.y as i16);
+        } else if platforms
+            .iter()
+            .any(|platform| self.rhb.as_ref().unwrap().collides_with(&platform))
+        {
+            log!("Hullo");
+            self.rhb.as_mut().unwrap().kill();
         }
 
-        if self.rhb.as_ref().unwrap().landing() {
-            self.rhb.as_mut().unwrap().land_on(FLOOR);
-        }
-
-        // Collisions
         if self
             .rhb
             .as_ref()
@@ -131,6 +133,7 @@ impl Game for WalkTheDog {
         {
             self.rhb.as_mut().unwrap().kill();
         }
+
         if self.rhb.as_ref().unwrap().landing() {
             self.rhb.as_mut().unwrap().land_on(FLOOR);
         }
@@ -329,6 +332,7 @@ impl RedHatBoyStateMachine {
     fn kill(self) -> Self {
         match self {
             RedHatBoyStateMachine::Running(val) => RedHatBoyStateMachine::Crashing(val.into()),
+            RedHatBoyStateMachine::Jumping(val) => RedHatBoyStateMachine::Crashing(val.into()),
             _ => self,
         }
     }
@@ -495,6 +499,15 @@ impl From<RedHatBoyState<Jumping>> for RedHatBoyState<Running> {
         RedHatBoyState {
             _state: Running {},
             object: machine.object.reset_frame().land(),
+        }
+    }
+}
+
+impl From<RedHatBoyState<Jumping>> for RedHatBoyState<Crashing> {
+    fn from(machine: RedHatBoyState<Jumping>) -> Self {
+        RedHatBoyState {
+            _state: Crashing {},
+            object: machine.object.reset_frame().kill(),
         }
     }
 }
