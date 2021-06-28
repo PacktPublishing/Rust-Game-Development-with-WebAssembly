@@ -275,7 +275,7 @@ const FRAME_SIZE: f32 = 1.0 / 60.0 * 1000.0;
 
 #[async_trait(?Send)]
 pub trait Game {
-    async fn initialize(&mut self) -> Result<()>;
+    async fn initialize(&mut self) -> Result<Box<dyn Game>>;
     fn update(&mut self, keystate: &KeyState);
     fn draw(&self, context: &Renderer);
 }
@@ -289,7 +289,7 @@ type SharedLoopClosure = Rc<RefCell<Option<LoopClosure>>>;
 impl GameLoop {
     pub async fn start(mut game: impl Game + 'static) -> Result<()> {
         let mut keyevent_receiver = prepare_input()?;
-        game.initialize().await?;
+        let mut game = game.initialize().await?;
 
         let mut game_loop = GameLoop {
             last_frame: browser::now()?,

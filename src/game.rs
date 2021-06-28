@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use async_trait::async_trait;
 
 use crate::{
@@ -14,62 +14,74 @@ const JUMPING_ANIMATION: &str = "Jump";
 const SLIDING_ANIMATION: &str = "Slide";
 const DEAD_ANIMATION: &str = "Dead";
 
-pub struct WalkTheDog {
-    background: Option<Image>,
-    rock: Option<Image>,
-    rhb: Option<RedHatBoy>,
-    platform: Option<SpriteSheet>,
+pub enum WalkTheDog {
+    Loading,
+    Loaded(WalkTheDogGame),
 }
 
 impl WalkTheDog {
     pub fn new() -> Self {
-        WalkTheDog {
-            background: None,
-            rock: None,
-            rhb: None,
-            platform: None,
-        }
-    }
-
-    fn draw_rock(&self, renderer: &Renderer) {
-        if let Some(rock) = &self.rock {
-            rock.draw(renderer);
-        }
-    }
-
-    fn draw_background(&self, renderer: &Renderer) {
-        if let Some(background) = &self.background {
-            background.draw(renderer);
-        }
-    }
-
-    fn draw_platform(&self, renderer: &Renderer) {
-        if let Some(platform) = &self.platform {
-            platform.draw(renderer, "13.png", &Point { x: 220, y: 350 });
-            platform.draw(renderer, "14.png", &Point { x: 348, y: 350 });
-            platform.draw(renderer, "15.png", &Point { x: 476, y: 350 });
-        }
+        WalkTheDog::Loading {}
     }
 }
 
 #[async_trait(?Send)]
 impl Game for WalkTheDog {
-    async fn initialize(&mut self) -> Result<()> {
-        self.background = Some(Image::new(
-            engine::load_image("BG.png").await?,
-            Point { x: 0, y: 0 },
-        ));
+    async fn initialize(&mut self) -> Result<Box<dyn Game>> {
+        match self {
+            WalkTheDog::Loading => {
+                let game = WalkTheDogGame::initialize().await?;
+                Ok(Box::new(WalkTheDog::Loaded(game)))
+            }
+            WalkTheDog::Loaded(_) => Err(anyhow!("WalkTheDog already loaded!")),
+        }
+    }
 
-        self.rock = Some(Image::new(
+    fn update(&mut self, keystate: &KeyState) {
+        match self {
+            WalkTheDog::Loaded(game) => game.update(keystate),
+            _ => {}
+        }
+    }
+
+    fn draw(&self, renderer: &Renderer) {
+        match self {
+            WalkTheDog::Loaded(game) => game.draw(renderer),
+            _ => {}
+        }
+    }
+}
+
+pub struct WalkTheDogGame {
+    background: Image,
+    rock: Image,
+    rhb: RedHatBoy,
+    platform: SpriteSheet,
+}
+
+impl WalkTheDogGame {
+    fn draw_platform(&self, renderer: &Renderer) {
+        self.platform
+            .draw(renderer, "13.png", &Point { x: 220, y: 350 });
+        self.platform
+            .draw(renderer, "14.png", &Point { x: 348, y: 350 });
+        self.platform
+            .draw(renderer, "15.png", &Point { x: 476, y: 350 });
+    }
+
+    async fn initialize() -> Result<WalkTheDogGame> {
+        let background = Image::new(engine::load_image("BG.png").await?, Point { x: 0, y: 0 });
+
+        let rock = Image::new(
             engine::load_image("Stone.png").await?,
             Point { x: 200, y: 546 },
-        ));
+        );
 
         let json = browser::fetch_json("rhb.json").await?;
         let sheet = json.into_serde()?;
         let image = engine::load_image("rhb.png").await?;
 
-        self.rhb = Some(RedHatBoy::new(Animation::new(
+        let rhb = RedHatBoy::new(Animation::new(
             SpriteSheet::new(image, sheet),
             vec![
                 IDLE_ANIMATION,
@@ -78,34 +90,39 @@ impl Game for WalkTheDog {
                 SLIDING_ANIMATION,
                 DEAD_ANIMATION,
             ],
-        )));
+        ));
 
         let json = browser::fetch_json("tiles.json").await?;
         let sheet = json.into_serde()?;
         let image = engine::load_image("tiles.png").await?;
-        self.platform = Some(SpriteSheet::new(image, sheet));
+        let platform = SpriteSheet::new(image, sheet);
 
-        Ok(())
+        Ok(WalkTheDogGame {
+            background,
+            rock,
+            rhb,
+            platform,
+        })
     }
 
     fn update(&mut self, keystate: &KeyState) {
         if keystate.is_pressed("ArrowRight") {
-            self.rhb.as_mut().unwrap().run();
+            self.rhb.run();
         }
 
         if keystate.is_pressed("ArrowLeft") {
-            self.rhb.as_mut().unwrap().moonwalk();
+            self.rhb.moonwalk();
         }
 
         if keystate.is_pressed("Space") {
-            self.rhb.as_mut().unwrap().jump();
+            self.rhb.jump();
         }
 
         if keystate.is_pressed("ArrowDown") {
-            self.rhb.as_mut().unwrap().slide();
+            self.rhb.slide();
         }
 
-        self.rhb.as_mut().unwrap().update();
+        self.rhb.update();
 
         let platform_box = Rect {
             x: 220.0,
@@ -115,27 +132,21 @@ impl Game for WalkTheDog {
         };
         let platforms = vec![&platform_box];
 
-        if self.rhb.as_ref().unwrap().landing_on(&platform_box) {
-            self.rhb.as_mut().unwrap().land_on(platform_box.y as i16);
+        if self.rhb.landing_on(&platform_box) {
+            self.rhb.land_on(platform_box.y as i16);
         } else if platforms
             .iter()
-            .any(|platform| self.rhb.as_ref().unwrap().collides_with(&platform))
+            .any(|platform| self.rhb.collides_with(&platform))
         {
-            log!("Hullo");
-            self.rhb.as_mut().unwrap().kill();
+            self.rhb.kill();
         }
 
-        if self
-            .rhb
-            .as_ref()
-            .unwrap()
-            .collides_with(&self.rock.as_ref().unwrap().bounding_box())
-        {
-            self.rhb.as_mut().unwrap().kill();
+        if self.rhb.collides_with(&self.rock.bounding_box()) {
+            self.rhb.kill();
         }
 
-        if self.rhb.as_ref().unwrap().landing() {
-            self.rhb.as_mut().unwrap().land_on(FLOOR);
+        if self.rhb.landing() {
+            self.rhb.land_on(FLOOR);
         }
     }
 
@@ -147,10 +158,9 @@ impl Game for WalkTheDog {
             height: 600.0,
         });
 
-        self.draw_background(renderer);
-        self.draw_rock(renderer);
-
-        self.rhb.as_ref().as_mut().unwrap().draw(renderer);
+        self.background.draw(renderer);
+        self.rock.draw(renderer);
+        self.rhb.draw(renderer);
 
         self.draw_platform(renderer);
         renderer.draw_rect(
