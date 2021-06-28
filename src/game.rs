@@ -52,23 +52,42 @@ impl Game for WalkTheDog {
     }
 }
 
+struct Platform {
+    sheet: SpriteSheet,
+    bounding_box: Rect,
+    position: Point,
+    sprites: Vec<String>,
+}
+
+impl Platform {
+    fn draw(&self, renderer: &Renderer) {
+        for (pos, sprite) in self.sprites.iter().enumerate() {
+            let position = Point {
+                x: self.position.x + (pos as i16 * 128), // FIXME: Width shouldn't be hard coded (probably)
+                y: self.position.y,
+            };
+            self.sheet.draw(renderer, sprite, &position)
+        }
+    }
+
+    fn bounding_box(&self) -> Rect {
+        Rect {
+            x: self.position.x.into(),
+            y: self.position.y.into(),
+            width: self.bounding_box.width,
+            height: self.bounding_box.height,
+        }
+    }
+}
+
 pub struct WalkTheDogGame {
     background: Image,
     rock: Image,
     rhb: RedHatBoy,
-    platform: SpriteSheet,
+    platforms: Vec<Platform>,
 }
 
 impl WalkTheDogGame {
-    fn draw_platform(&self, renderer: &Renderer) {
-        self.platform
-            .draw(renderer, "13.png", &Point { x: 220, y: 350 });
-        self.platform
-            .draw(renderer, "14.png", &Point { x: 348, y: 350 });
-        self.platform
-            .draw(renderer, "15.png", &Point { x: 476, y: 350 });
-    }
-
     async fn initialize() -> Result<WalkTheDogGame> {
         let background = Image::new(engine::load_image("BG.png").await?, Point { x: 0, y: 0 });
 
@@ -95,13 +114,29 @@ impl WalkTheDogGame {
         let json = browser::fetch_json("tiles.json").await?;
         let sheet = json.into_serde()?;
         let image = engine::load_image("tiles.png").await?;
-        let platform = SpriteSheet::new(image, sheet);
+        let platform_sheet = SpriteSheet::new(image, sheet);
+
+        let first_platform = Platform {
+            sheet: platform_sheet,
+            bounding_box: Rect {
+                x: 0.0,
+                y: 0.0,
+                width: 384.0,
+                height: 90.0,
+            },
+            sprites: vec![
+                "13.png".to_string(),
+                "14.png".to_string(),
+                "15.png".to_string(),
+            ],
+            position: Point { x: 220, y: 350 },
+        };
 
         Ok(WalkTheDogGame {
             background,
             rock,
             rhb,
-            platform,
+            platforms: vec![first_platform],
         })
     }
 
@@ -124,21 +159,8 @@ impl WalkTheDogGame {
 
         self.rhb.update();
 
-        let platform_box = Rect {
-            x: 220.0,
-            y: 350.0,
-            width: 384.0,
-            height: 90.0,
-        };
-        let platforms = vec![&platform_box];
-
-        if self.rhb.landing_on(&platform_box) {
-            self.rhb.land_on(platform_box.y as i16);
-        } else if platforms
-            .iter()
-            .any(|platform| self.rhb.collides_with(&platform))
-        {
-            self.rhb.kill();
+        for (_, platform) in self.platforms.iter().enumerate() {
+            self.rhb.check_platform_collisions(platform);
         }
 
         if self.rhb.collides_with(&self.rock.bounding_box()) {
@@ -163,6 +185,10 @@ impl WalkTheDogGame {
         self.rhb.draw(renderer);
 
         self.draw_platform(renderer);
+    }
+
+    fn draw_platform(&self, renderer: &Renderer) {
+        self.platforms.first().unwrap().draw(renderer);
     }
 }
 
@@ -198,6 +224,14 @@ impl RedHatBoy {
             y: self.position().y as f32 + bounding_box.y,
             width: bounding_box.width,
             height: bounding_box.height,
+        }
+    }
+
+    fn check_platform_collisions(&mut self, platform: &Platform) {
+        if self.landing_on(&platform.bounding_box()) {
+            self.land_on(platform.position.y);
+        } else if self.collides_with(&platform.bounding_box()) {
+            self.kill();
         }
     }
 
