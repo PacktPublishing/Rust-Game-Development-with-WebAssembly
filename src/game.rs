@@ -14,6 +14,8 @@ const JUMPING_ANIMATION: &str = "Jump";
 const SLIDING_ANIMATION: &str = "Slide";
 const DEAD_ANIMATION: &str = "Dead";
 const RUNNING_SPEED: i16 = 4;
+const JUMP_VELOCITY: i16 = -25.0;
+const TERMINAL_VELOCITY: i16 = 20.0;
 
 pub enum WalkTheDog {
     Loading,
@@ -564,12 +566,12 @@ impl GameObject {
     }
 
     fn jump(mut self) -> Self {
-        self.velocity.y = -25.0;
+        self.velocity.y = JUMP_VELOCITY;
         self
     }
 
     fn update(mut self, frame_count: u8) -> Self {
-        if self.velocity.y < 20.0 {
+        if self.velocity.y < TERMINAL_VELOCITY {
             self.velocity.y += GRAVITY;
         }
 
