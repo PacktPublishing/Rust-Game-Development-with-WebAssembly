@@ -176,6 +176,7 @@ impl WalkTheDogGame {
         }
 
         self.background.move_horizontally(self.velocity);
+        self.rock.move_horizontally(self.velocity);
     }
 
     fn draw(&self, renderer: &Renderer) {
