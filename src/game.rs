@@ -71,6 +71,10 @@ impl Platform {
         }
     }
 
+    fn move_horizontally(&mut self, x: i16) {
+        self.position.x += x;
+    }
+
     fn bounding_box(&self) -> Rect {
         Rect {
             x: self.position.x.into(),
@@ -177,6 +181,9 @@ impl WalkTheDogGame {
 
         self.background.move_horizontally(self.velocity);
         self.rock.move_horizontally(self.velocity);
+        for (_, platform) in self.platforms.iter_mut().enumerate() {
+            platform.move_horizontally(self.velocity);
+        }
     }
 
     fn draw(&self, renderer: &Renderer) {
@@ -475,7 +482,7 @@ impl RedHatBoyState<Idle> {
     fn new() -> Self {
         let game_object = GameObject {
             frame: 0,
-            position: engine::Point { x: 0, y: 485 },
+            position: engine::Point { x: 10, y: 485 },
             velocity: Vector { x: 0.0, y: 0.0 },
         };
 
