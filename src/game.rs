@@ -174,6 +174,10 @@ impl WalkTheDogGame {
 
         self.rhb.update();
 
+        if self.rhb.is_dead() {
+            self.velocity = 0;
+        }
+
         for (_, platform) in self.platforms.iter().enumerate() {
             self.rhb.check_platform_collisions(platform);
         }
@@ -294,6 +298,10 @@ impl RedHatBoy {
         &self.state.game_object().position
     }
 
+    fn is_dead(&self) -> bool {
+        self.state.is_dead()
+    }
+
     fn run(&mut self) {
         self.state = self.state.run();
     }
@@ -356,6 +364,13 @@ impl RedHatBoyStateMachine {
             RedHatBoyStateMachine::Sliding(_) => SLIDING_ANIMATION,
             RedHatBoyStateMachine::Crashing(_) => DEAD_ANIMATION,
             RedHatBoyStateMachine::GameOver(_) => DEAD_ANIMATION,
+        }
+    }
+
+    fn is_dead(&self) -> bool {
+        match self {
+            RedHatBoyStateMachine::GameOver(_) | RedHatBoyStateMachine::Crashing(_) => true,
+            _ => false,
         }
     }
 
