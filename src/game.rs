@@ -13,6 +13,7 @@ const RUNNING_ANIMATION: &str = "Run";
 const JUMPING_ANIMATION: &str = "Jump";
 const SLIDING_ANIMATION: &str = "Slide";
 const DEAD_ANIMATION: &str = "Dead";
+const RUNNING_SPEED: i16 = 4;
 
 pub enum WalkTheDog {
     Loading,
@@ -85,6 +86,7 @@ pub struct WalkTheDogGame {
     rock: Image,
     rhb: RedHatBoy,
     platforms: Vec<Platform>,
+    velocity: i16,
 }
 
 impl WalkTheDogGame {
@@ -137,12 +139,14 @@ impl WalkTheDogGame {
             rock,
             rhb,
             platforms: vec![first_platform],
+            velocity: 0,
         })
     }
 
     fn update(&mut self, keystate: &KeyState) {
         if keystate.is_pressed("ArrowRight") {
             self.rhb.run();
+            self.velocity = -RUNNING_SPEED;
         }
 
         if keystate.is_pressed("ArrowLeft") {
@@ -170,6 +174,8 @@ impl WalkTheDogGame {
         if self.rhb.landing() {
             self.rhb.land_on(FLOOR);
         }
+
+        self.background.move_horizontally(self.velocity);
     }
 
     fn draw(&self, renderer: &Renderer) {
@@ -337,7 +343,6 @@ impl RedHatBoyStateMachine {
     fn run(self) -> Self {
         match self {
             RedHatBoyStateMachine::Idle(val) => RedHatBoyStateMachine::Running(val.into()),
-            RedHatBoyStateMachine::Running(val) => RedHatBoyStateMachine::Running(val.go_right()),
             _ => self,
         }
     }
@@ -484,17 +489,12 @@ impl From<RedHatBoyState<Idle>> for RedHatBoyState<Running> {
     fn from(machine: RedHatBoyState<Idle>) -> Self {
         RedHatBoyState {
             _state: Running {},
-            object: machine.object.go_right(),
+            object: machine.object,
         }
     }
 }
 
 impl RedHatBoyState<Running> {
-    fn go_right(mut self) -> Self {
-        self.object = self.object.go_right();
-        self
-    }
-
     fn go_left(mut self) -> Self {
         self.object = self.object.go_left();
         self
@@ -576,14 +576,6 @@ impl GameObject {
         self.velocity.x -= 4.0;
         if self.velocity.x < -4.0 {
             self.velocity.x = -4.0;
-        };
-        self
-    }
-
-    fn go_right(mut self) -> GameObject {
-        self.velocity.x += 4.0;
-        if self.velocity.x > 4.0 {
-            self.velocity.x = 4.0;
         };
         self
     }

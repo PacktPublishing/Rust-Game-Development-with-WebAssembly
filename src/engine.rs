@@ -67,6 +67,10 @@ impl Image {
         renderer.draw_whole_image(&self.image, &self.position);
     }
 
+    pub fn move_horizontally(&mut self, distance: i16) {
+        self.position.x += distance;
+    }
+
     pub fn bounding_box(&self) -> Rect {
         Rect {
             x: self.position.x as f32,
