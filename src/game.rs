@@ -14,8 +14,10 @@ const JUMPING_ANIMATION: &str = "Jump";
 const SLIDING_ANIMATION: &str = "Slide";
 const DEAD_ANIMATION: &str = "Dead";
 const RUNNING_SPEED: i16 = 4;
-const JUMP_VELOCITY: i16 = -25.0;
-const TERMINAL_VELOCITY: i16 = 20.0;
+const JUMP_VELOCITY: f32 = -25.0;
+const TERMINAL_VELOCITY: f32 = 20.0;
+const BACKGROUND_WIDTH: i16 = 1000;
+const RHB_POSITION: i16 = 100;
 
 pub enum WalkTheDog {
     Loading,
@@ -88,7 +90,7 @@ impl Platform {
 }
 
 pub struct WalkTheDogGame {
-    background: Image,
+    backgrounds: Vec<Image>,
     rock: Image,
     rhb: RedHatBoy,
     platforms: Vec<Platform>,
@@ -98,10 +100,17 @@ pub struct WalkTheDogGame {
 impl WalkTheDogGame {
     async fn initialize() -> Result<WalkTheDogGame> {
         let background = Image::new(engine::load_image("BG.png").await?, Point { x: 0, y: 0 });
+        let background_2 = Image::new(
+            engine::load_image("BG.png").await?,
+            Point {
+                x: BACKGROUND_WIDTH,
+                y: 0,
+            },
+        );
 
         let rock = Image::new(
             engine::load_image("Stone.png").await?,
-            Point { x: 200, y: 546 },
+            Point { x: 700, y: 546 },
         );
 
         let json = browser::fetch_json("rhb.json").await?;
@@ -141,7 +150,7 @@ impl WalkTheDogGame {
         };
 
         Ok(WalkTheDogGame {
-            background,
+            backgrounds: vec![background, background_2],
             rock,
             rhb,
             platforms: vec![first_platform],
@@ -177,7 +186,13 @@ impl WalkTheDogGame {
             self.rhb.land_on(FLOOR);
         }
 
-        self.background.move_horizontally(self.velocity);
+        for (_, background) in self.backgrounds.iter_mut().enumerate() {
+            if background.x() == -BACKGROUND_WIDTH {
+                background.set_x(BACKGROUND_WIDTH);
+            }
+            background.move_horizontally(self.velocity);
+        }
+
         self.rock.move_horizontally(self.velocity);
         for (_, platform) in self.platforms.iter_mut().enumerate() {
             platform.move_horizontally(self.velocity);
@@ -192,7 +207,9 @@ impl WalkTheDogGame {
             height: 600.0,
         });
 
-        self.background.draw(renderer);
+        self.backgrounds.iter().for_each(|background| {
+            background.draw(&renderer);
+        });
         self.rock.draw(renderer);
         self.rhb.draw(renderer);
 
@@ -469,7 +486,10 @@ impl RedHatBoyState<Idle> {
     fn new() -> Self {
         let game_object = GameObject {
             frame: 0,
-            position: engine::Point { x: 10, y: 485 },
+            position: engine::Point {
+                x: RHB_POSITION,
+                y: 485,
+            },
             velocity: Vector { x: 0.0, y: 0.0 },
         };
 
