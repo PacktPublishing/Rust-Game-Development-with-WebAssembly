@@ -153,10 +153,6 @@ impl WalkTheDogGame {
             self.velocity = -RUNNING_SPEED;
         }
 
-        if keystate.is_pressed("ArrowLeft") {
-            self.rhb.moonwalk();
-        }
-
         if keystate.is_pressed("Space") {
             self.rhb.jump();
         }
@@ -287,10 +283,6 @@ impl RedHatBoy {
         self.state = self.state.kill();
     }
 
-    fn moonwalk(&mut self) {
-        self.state = self.state.moonwalk();
-    }
-
     fn jump(&mut self) {
         self.state = self.state.jump();
     }
@@ -365,13 +357,6 @@ impl RedHatBoyStateMachine {
     fn slide(self) -> Self {
         match self {
             RedHatBoyStateMachine::Running(val) => RedHatBoyStateMachine::Sliding(val.into()),
-            _ => self,
-        }
-    }
-
-    fn moonwalk(self) -> Self {
-        match self {
-            RedHatBoyStateMachine::Running(val) => RedHatBoyStateMachine::Running(val.go_left()),
             _ => self,
         }
     }
@@ -502,13 +487,6 @@ impl From<RedHatBoyState<Idle>> for RedHatBoyState<Running> {
     }
 }
 
-impl RedHatBoyState<Running> {
-    fn go_left(mut self) -> Self {
-        self.object = self.object.go_left();
-        self
-    }
-}
-
 impl From<RedHatBoyState<Running>> for RedHatBoyState<Sliding> {
     fn from(machine: RedHatBoyState<Running>) -> Self {
         RedHatBoyState {
@@ -580,14 +558,6 @@ struct GameObject {
 }
 
 impl GameObject {
-    fn go_left(mut self) -> GameObject {
-        self.velocity.x -= 4.0;
-        if self.velocity.x < -4.0 {
-            self.velocity.x = -4.0;
-        };
-        self
-    }
-
     fn set_on(mut self, y: i16) -> GameObject {
         self.position.y = y;
         self
