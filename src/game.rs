@@ -81,8 +81,10 @@ impl RedHatBoy {
                 height: sprite.frame.h.into(),
             },
             &Rect {
-                x: self.state.game_object().position.x.into(),
-                y: self.state.game_object().position.y.into(),
+                x: (self.state.game_object().position.x + sprite.sprite_source_size.x as i16)
+                    .into(),
+                y: (self.state.game_object().position.y + sprite.sprite_source_size.y as i16)
+                    .into(),
                 width: sprite.frame.w.into(),
                 height: sprite.frame.h.into(),
             },
