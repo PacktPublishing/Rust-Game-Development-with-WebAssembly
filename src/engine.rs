@@ -252,8 +252,10 @@ pub struct SheetRect {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Cell {
     pub frame: SheetRect,
+    pub sprite_source_size: SheetRect,
 }
 
 #[derive(Deserialize, Debug)]
