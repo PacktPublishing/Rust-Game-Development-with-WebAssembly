@@ -356,6 +356,14 @@ impl Game for WalkTheDog {
                 walk.boy.slide();
             }
 
+            if walk
+                .boy
+                .bounding_box()
+                .intersects(walk.stone.bounding_box())
+            {
+                walk.boy.kill()
+            }
+
             walk.boy.update();
         }
     }
