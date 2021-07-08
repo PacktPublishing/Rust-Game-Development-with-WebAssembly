@@ -14,11 +14,13 @@ const IDLE_FRAMES: u8 = 29;
 const RUNNING_FRAMES: u8 = 23;
 const JUMPING_FRAMES: u8 = 35;
 const SLIDING_FRAMES: u8 = 14;
+const FALLING_FRAMES: u8 = 29;
 const RUNNING_SPEED: i16 = 3;
 const IDLE_FRAME_NAME: &str = "Idle";
 const RUN_FRAME_NAME: &str = "Run";
 const SLIDING_FRAME_NAME: &str = "Slide";
 const JUMPING_FRAME_NAME: &str = "Jump";
+const FALLING_FRAME_NAME: &str = "Dead";
 const JUMP_SPEED: i16 = -25;
 const GRAVITY: i16 = 1;
 
@@ -47,6 +49,10 @@ impl RedHatBoy {
 
     fn jump(&mut self) {
         self.state = self.state.jump();
+    }
+
+    fn kill(&mut self) {
+        self.state = self.state.kill();
     }
 
     fn update(&mut self) {
@@ -97,6 +103,7 @@ enum RedHatBoyStateMachine {
     Running(RedHatBoyState<Running>),
     Sliding(RedHatBoyState<Sliding>),
     Jumping(RedHatBoyState<Jumping>),
+    Falling(RedHatBoyState<Falling>),
 }
 
 impl RedHatBoyStateMachine {
@@ -121,12 +128,20 @@ impl RedHatBoyStateMachine {
         }
     }
 
+    fn kill(self) -> Self {
+        match self {
+            RedHatBoyStateMachine::Running(val) => RedHatBoyStateMachine::Falling(val.into()),
+            _ => self,
+        }
+    }
+
     fn state_name(&self) -> &str {
         match self {
             RedHatBoyStateMachine::Idle(_) => IDLE_FRAME_NAME,
             RedHatBoyStateMachine::Running(_) => RUN_FRAME_NAME,
             RedHatBoyStateMachine::Jumping(_) => JUMPING_FRAME_NAME,
             RedHatBoyStateMachine::Sliding(_) => SLIDING_FRAME_NAME,
+            RedHatBoyStateMachine::Falling(_) => FALLING_FRAME_NAME,
         }
     }
 
@@ -136,6 +151,7 @@ impl RedHatBoyStateMachine {
             RedHatBoyStateMachine::Running(state) => &state.game_object,
             RedHatBoyStateMachine::Jumping(state) => &state.game_object,
             RedHatBoyStateMachine::Sliding(state) => &state.game_object,
+            RedHatBoyStateMachine::Falling(state) => &state.game_object,
         }
     }
 
@@ -166,6 +182,10 @@ impl RedHatBoyStateMachine {
                 } else {
                     RedHatBoyStateMachine::Sliding(state)
                 }
+            }
+            RedHatBoyStateMachine::Falling(mut state) => {
+                state.game_object = state.game_object.update(FALLING_FRAMES);
+                RedHatBoyStateMachine::Falling(state)
             }
         }
     }
@@ -254,6 +274,18 @@ impl From<RedHatBoyState<Running>> for RedHatBoyState<Sliding> {
         RedHatBoyState {
             game_object: machine.game_object,
             _state: Sliding {},
+        }
+    }
+}
+
+#[derive(Copy, Clone)]
+struct Falling;
+
+impl From<RedHatBoyState<Running>> for RedHatBoyState<Falling> {
+    fn from(mut machine: RedHatBoyState<Running>) -> Self {
+        RedHatBoyState {
+            game_object: machine.game_object,
+            _state: Falling {},
         }
     }
 }
