@@ -54,12 +54,6 @@ impl Renderer {
     }
 
     pub fn draw_entire_image(&self, image: &HtmlImageElement, position: &Point) {
-        self.draw_rect(&Rect {
-            x: position.x.into(),
-            y: position.y.into(),
-            width: image.width() as f32,
-            height: image.height() as f32,
-        });
         self.context
             .draw_image_with_html_image_element(image, position.x.into(), position.y.into())
             .expect("Drawing is throwing exceptions! Unrecoverable error.");
@@ -231,15 +225,30 @@ fn prepare_input() -> Result<UnboundedReceiver<KeyPress>> {
 pub struct Image {
     element: HtmlImageElement,
     position: Point,
+    bounding_box: Rect,
 }
 
 impl Image {
     pub fn new(element: HtmlImageElement, position: Point) -> Self {
-        Self { element, position }
+        let bounding_box = Rect {
+            x: position.x.into(),
+            y: position.y.into(),
+            width: element.width() as f32,
+            height: element.height() as f32,
+        };
+        Self {
+            element,
+            position,
+            bounding_box,
+        }
     }
 
     pub fn draw(&self, renderer: &Renderer) {
         renderer.draw_entire_image(&self.element, &self.position)
+    }
+
+    pub fn bounding_box(&self) -> &Rect {
+        &self.bounding_box
     }
 }
 
