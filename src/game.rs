@@ -8,7 +8,7 @@ use crate::{
     engine::{self, Game, KeyState, Point, Rect, Renderer, Sheet},
 };
 
-const FLOOR: i16 = 478;
+const FLOOR: i16 = 479;
 const STARTING_POINT: i16 = -20;
 const IDLE_FRAMES: u8 = 29;
 const RUNNING_FRAMES: u8 = 23;
